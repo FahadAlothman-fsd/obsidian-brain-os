@@ -3,6 +3,7 @@ import { svelte, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import builtins from "builtin-modules";
 import UnoCSS from "unocss/vite";
 import { PluginOption, defineConfig } from "vite";
+import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 
 const setOutDir = (mode: string) => {
   switch (mode) {
@@ -17,7 +18,12 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       UnoCSS(),
-      svelte({ preprocess: vitePreprocess() }) as PluginOption,
+      svelte({
+        preprocess: [vitePreprocess(), sequence([
+          // ... other preprocessors
+          preprocessMeltUI() // add to the end!
+        ])]
+      }) as PluginOption,
     ],
     build: {
       lib: {
