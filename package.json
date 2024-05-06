@@ -21,6 +21,7 @@
     "@tsconfig/svelte": "^5.0.2",
     "@types/node": "^20.8.10",
     "@unocss/extractor-svelte": "^0.57.2",
+    "@unocss/preset-icons": "^0.59.4",
     "builtin-modules": "^3.3.0",
     "bun-types": "latest",
     "obsidian": "^1.4.11",

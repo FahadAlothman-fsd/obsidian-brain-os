@@ -1,41 +1,36 @@
 <script lang="ts">
   import { createCalendar, melt } from "@melt-ui/svelte";
-  import Icon from "@iconify/svelte";
 
   const {
     elements: { calendar, heading, grid, cell, prevButton, nextButton },
     states: { months, headingValue, weekdays },
     helpers: { isDateDisabled, isDateUnavailable },
-    options: { locale },
   } = createCalendar();
 </script>
 
 <section>
   <div
     use:melt={$calendar}
-    class="w-full rounded-lg bg-white p-3 text-magnum-800 shadow-sm"
+    class="w-full rounded-lg bg-magnum-100 p-3 text-magnum-800 shadow-sm"
   >
     <header class="flex items-center justify-between pb-2">
       <button
         use:melt={$prevButton}
-        class="rounded-lg p-1 transition-all hover:bg-magnum-100"
+        class="rounded-lg p-1 transition-all bg-magnum-300 hover:bg-magnum-600"
       >
-        <Icon icon="mdi:chevron-left" width="24" height="24" />
+        <i class="i-heroicons-chevron-left-solid text-4" />
       </button>
-      <div
-        use:melt={$heading}
-        class="flex items-center gap-8 font-semibold text-magnum-800"
-      >
+      <div use:melt={$heading} class="font-semibold text-magnum-800">
         {$headingValue}
       </div>
       <button
         use:melt={$nextButton}
         class="rounded-lg p-1 transition-all hover:bg-magnum-100"
       >
-        <Icon icon="mdi:chevron-right" width="24" height="24" />
+        <i class="i-heroicons-chevron-right-solid text-4" />
       </button>
     </header>
-    <div>
+    <div class="flex items-center gap-8">
       {#each $months as month}
         <table use:melt={$grid} class="w-full">
           <thead aria-hidden="true">
