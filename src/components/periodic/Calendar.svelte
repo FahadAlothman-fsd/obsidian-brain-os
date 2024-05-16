@@ -4,7 +4,7 @@
   const {
     elements: { calendar, heading, grid, cell, prevButton, nextButton },
     states: { months, headingValue, weekdays },
-    helpers: { isDateDisabled, isDateUnavailable },
+    helpers: { isDateDisabled, isDateUnavailable, prevYear, nextYear },
   } = createCalendar();
 </script>
 
@@ -16,7 +16,7 @@
     <header class="flex items-center justify-between pb-2">
       <button
         use:melt={$prevButton}
-        class="rounded-lg p-1 transition-all bg-magnum-300 hover:bg-magnum-600"
+        class="rounded-lg p-1 transition-all bg-magnum-300 hover:bg-magnum-100"
       >
         <i class="i-heroicons-chevron-left-solid text-4" />
       </button>
@@ -35,6 +35,11 @@
         <table use:melt={$grid} class="w-full">
           <thead aria-hidden="true">
             <tr>
+              <th class="text-sm font-semibold text-magnum-800">
+                <div class="flex h-6 w-6 items-center justify-center p-4">
+                  W
+                </div>
+              </th>
               {#each $weekdays as day}
                 <th class="text-sm font-semibold text-magnum-800">
                   <div class="flex h-6 w-6 items-center justify-center p-4">
@@ -47,6 +52,18 @@
           <tbody>
             {#each month.weeks as weekDates}
               <tr>
+                <td
+                  role="gridcell"
+                  aria-disabled={$isDateDisabled(weekDates[0]) ||
+                    $isDateUnavailable(weekDates[0])}
+                >
+                  <div
+                    use:melt={$cell(weekDates[0], month.value)}
+                    class="flex h-6 w-6 cursor-pointer select-none items-center justify-center rounded-lg p-4 hover:bg-magnum-100 focus:ring focus:ring-magnum-400 data-[outside-visible-months]:pointer-events-none data-[outside-visible-months]:cursor-default data-[range-highlighted]:bg-magnum-200 data-[selected]:bg-magnum-300 data-[selected]:text-magnum-900 data-[disabled]:opacity-40 data-[outside-visible-months]:opacity-40 data-[outside-visible-months]:hover:bg-transparent"
+                  >
+                    {weekDates[0].day}
+                  </div>
+                </td>
                 {#each weekDates as date}
                   <td
                     role="gridcell"

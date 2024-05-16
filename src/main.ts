@@ -1,6 +1,7 @@
 import { Plugin } from "obsidian";
 import { ExampleView, VIEW_TYPE_EXAMPLE } from "./views/ExampleView";
 import "virtual:uno.css";
+import { pluginStore } from './store'
 
 interface ObsidianNoteConnectionsSettings {
   mySetting: string;
@@ -24,11 +25,13 @@ export default class ObsidianNoteConnections extends Plugin {
   async onload() {
     await this.loadSettings();
 
+    pluginStore.plugin.set(this)
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleView(leaf));
 
     this.addRibbonIcon("brain", "Activate view", () => {
       this.activateView();
     });
+
   }
 
   onunload() {
