@@ -25,12 +25,12 @@
       </div>
       <button
         use:melt={$nextButton}
-        class="rounded-lg p-1 transition-all hover:bg-magnum-100"
+        class="rounded-lg bg-magnum-400 p-1 transition-all hover:bg-magnum-400"
       >
         <i class="i-heroicons-chevron-right-solid text-4" />
       </button>
     </header>
-    <div class="flex items-center gap-8">
+    <div class="flex items-center gap-2">
       {#each $months as month}
         <table use:melt={$grid} class="w-full">
           <thead aria-hidden="true">
@@ -54,6 +54,7 @@
               <tr>
                 <td
                   role="gridcell"
+                  style="border-right: 1px solid black;"
                   aria-disabled={$isDateDisabled(weekDates[0]) ||
                     $isDateUnavailable(weekDates[0])}
                 >
@@ -64,6 +65,7 @@
                     {weekDates[0].day}
                   </div>
                 </td>
+
                 {#each weekDates as date}
                   <td
                     role="gridcell"
