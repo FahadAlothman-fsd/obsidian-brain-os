@@ -1,7 +1,13 @@
 import { Plugin } from "obsidian";
 import { ExampleView, VIEW_TYPE_EXAMPLE } from "./views/ExampleView";
+import {
+  PeriodicView, PERIODIC_VIEW,
+  ParaView, PARA_VIEW,
+  MediaConsumptionView, MEDIA_CONSUMPTION_VIEW,
+  IntegratorView, INTEGRATOR_VIEW
+} from "./views";
 import "virtual:uno.css";
-import { pluginStore } from './store'
+import { pluginStore } from './stores'
 
 interface ObsidianNoteConnectionsSettings {
   mySetting: string;
@@ -27,11 +33,30 @@ export default class ObsidianNoteConnections extends Plugin {
 
     pluginStore.plugin.set(this)
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleView(leaf));
+    this.registerView(PARA_VIEW, (leaf) => new ParaView(leaf));
+    this.registerView(PERIODIC_VIEW, (leaf) => new PeriodicView(leaf));
+    this.registerView(INTEGRATOR_VIEW, (leaf) => new IntegratorView(leaf));
+    this.registerView(MEDIA_CONSUMPTION_VIEW, (leaf) => new MediaConsumptionView(leaf));
 
-    this.addRibbonIcon("brain", "Activate view", () => {
-      this.activateView();
+    // this.addRibbonIcon("brain", "BrainOS view", () => {
+    //   this.activateView();
+    // });
+
+    this.addRibbonIcon("infinity", "BOS: PARA view", () => {
+      this.activateParaView();
     });
 
+    this.addRibbonIcon("calendar-clock", "BOS: Periodic view", () => {
+      this.activatePeriodicView();
+    });
+
+    this.addRibbonIcon("book-marked", "BOS: Media view", () => {
+      this.activateMediaView();
+    });
+
+    this.addRibbonIcon("shapes", "BOS: Integrator view", () => {
+      this.activateIntegratorView();
+    });
   }
 
   onunload() {
@@ -48,6 +73,58 @@ export default class ObsidianNoteConnections extends Plugin {
 
     this.app.workspace.revealLeaf(
       this.app.workspace.getLeavesOfType(VIEW_TYPE_EXAMPLE)[0],
+    );
+  }
+
+  async activatePeriodicView() {
+    this.app.workspace.detachLeavesOfType(PERIODIC_VIEW);
+
+    await this.app.workspace.getRightLeaf(false).setViewState({
+      type: PERIODIC_VIEW,
+      active: true,
+    });
+
+    this.app.workspace.revealLeaf(
+      this.app.workspace.getLeavesOfType(PERIODIC_VIEW)[0],
+    );
+  }
+
+  async activateParaView() {
+    this.app.workspace.detachLeavesOfType(PARA_VIEW);
+
+    await this.app.workspace.getRightLeaf(false).setViewState({
+      type: PARA_VIEW,
+      active: true,
+    });
+
+    this.app.workspace.revealLeaf(
+      this.app.workspace.getLeavesOfType(PARA_VIEW)[0],
+    );
+  }
+
+  async activateMediaView() {
+    this.app.workspace.detachLeavesOfType(MEDIA_CONSUMPTION_VIEW);
+
+    await this.app.workspace.getRightLeaf(false).setViewState({
+      type: MEDIA_CONSUMPTION_VIEW,
+      active: true,
+    });
+
+    this.app.workspace.revealLeaf(
+      this.app.workspace.getLeavesOfType(MEDIA_CONSUMPTION_VIEW)[0],
+    );
+  }
+
+  async activateIntegratorView() {
+    this.app.workspace.detachLeavesOfType(INTEGRATOR_VIEW);
+
+    await this.app.workspace.getRightLeaf(false).setViewState({
+      type: INTEGRATOR_VIEW,
+      active: true,
+    });
+
+    this.app.workspace.revealLeaf(
+      this.app.workspace.getLeavesOfType(INTEGRATOR_VIEW)[0],
     );
   }
 }

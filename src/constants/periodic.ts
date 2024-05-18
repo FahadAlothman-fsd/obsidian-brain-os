@@ -1,4 +1,3 @@
-
 export const PERIODIC = 'Periodic Notes';
 export const DAILY = 'Daily';
 export const WEEKLY = 'Weekly';
