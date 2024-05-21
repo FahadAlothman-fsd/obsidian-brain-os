@@ -4,20 +4,22 @@ export type PARAType = {
   // projectsPath: string; // should be a path 
   // areasPath: string; // should be a path
   // resourcesPath: string; //should be a path
+
+  usePARANotes: boolean;
   projects: {
-    template: string;
+    template: string; // README.md file
     folder: string; // should be path
   }
   areas: {
-    template: string;
+    template: string; // README.md file
     folder: string; // should be path
   }
   resources: {
-    template: string;
+    template: string; // README.md file
     folder: string; // should be path
   }
   archives: {
-    template: string;
+    template: string; // README.md file
     folder: string; // should be path
   }
 }

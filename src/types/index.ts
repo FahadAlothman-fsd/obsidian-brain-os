@@ -1,3 +1,5 @@
+import type { PARAType as paraType } from "./paraTypes";
+import type { PeriodicType as periodicType } from "./periodicTypes";
 
 export interface PluginSettings {
   templatePath: string;
@@ -15,4 +17,17 @@ export interface PluginSettings {
   useDailyRecord: boolean;
   usePeriodicNotes: boolean;
   usePARANotes: boolean;
+}
+
+export type TabsType = {
+  id: string;
+  title: string;
+  icon: string;
+  component: any;
+}[];
+
+
+export interface BrainSettings {
+  para: paraType
+  periodic: periodicType
 }

@@ -1,4 +1,11 @@
-import { Plugin } from "obsidian";
+import { Plugin, setIcon } from "obsidian";
+import type {
+  App,
+  MarkdownPostProcessorContext,
+  PluginManifest,
+} from 'obsidian';
+import "virtual:uno.css";
+import { DataviewApi, getAPI, isPluginEnabled } from 'obsidian-dataview';
 import { ExampleView, VIEW_TYPE_EXAMPLE } from "./views/ExampleView";
 import {
   PeriodicView, PERIODIC_VIEW,
@@ -6,19 +13,14 @@ import {
   MediaConsumptionView, MEDIA_CONSUMPTION_VIEW,
   IntegratorView, INTEGRATOR_VIEW
 } from "./views";
-import "virtual:uno.css";
-import { pluginStore } from './stores'
+import { pluginStore } from './stores';
+import type { PluginSettings, BrainSettings } from "./types";
+import { DEFAULT_SETTINGS } from "./SettingsTab";
 
-interface ObsidianNoteConnectionsSettings {
-  mySetting: string;
-}
 
-const DEFAULT_SETTINGS: ObsidianNoteConnectionsSettings = {
-  mySetting: "default",
-};
 
-export default class ObsidianNoteConnections extends Plugin {
-  settings!: ObsidianNoteConnectionsSettings;
+export default class BrainOS extends Plugin {
+  settings!: PluginSettings;
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());

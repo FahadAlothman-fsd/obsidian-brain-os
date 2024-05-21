@@ -1,4 +1,4 @@
-import Grid from './grid.svelte'
+import Grid from './Grid.svelte'
 
 
 
