@@ -14,7 +14,7 @@ export class PeriodicView extends ItemView {
   }
 
   getDisplayText() {
-    return "Example view";
+    return "Periodic View";
   }
 
   getIcon(): string {
@@ -24,6 +24,9 @@ export class PeriodicView extends ItemView {
   async onOpen() {
     this.component = new Periodic({
       target: this.contentEl,
+      props: {
+        width: this.contentEl.innerWidth
+      }
     });
   }
 

@@ -8,7 +8,7 @@ import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 const setOutDir = (mode: string) => {
   switch (mode) {
     case "development":
-      return "../testing-plugins-vault/.obsidian/plugins/obsidian-svelte-plugin";
+      return "../testing-plugins-vault/.obsidian/plugins/obsidian-brain-os";
     case "production":
       return "build";
   }

@@ -1,14 +1,25 @@
 <script lang="ts">
   import { createCalendar, melt } from "@melt-ui/svelte";
   import { writable, derived } from "svelte/store";
+  import { onDestroy } from "svelte";
+  export let PeriodicType: "Day/Week" | "Monthly" | "Quarterly" | "Yearly";
 
   const {
     elements: { calendar, heading, grid, cell, prevButton, nextButton },
     states: { months, headingValue, weekdays },
-    helpers: { isDateDisabled, isDateUnavailable, prevYear, nextYear },
+    helpers: { isDateDisabled, isDateUnavailable, prevYear, nextYear, setYear },
   } = createCalendar();
+  let year: number;
 
-  console.log($headingValue.split(" ")[1]);
+  const year_unsub = headingValue.subscribe((value) => {
+    year = Math.floor(Number(value.split(" ")[1]) / 10) * 10;
+
+    console.log(`year: ${year}`);
+  });
+  $: console.log(
+    `month.value: ${$months[0].value}, date: ${$months[0].weeks[0][0]} `,
+  );
+  onDestroy(year_unsub);
 </script>
 
 <section>
@@ -22,18 +33,21 @@
           e.preventDefault();
           prevYear();
         }}
-        class="rounded-lg p-2 transition-all hover:bg-fuchsia-300"
+        class="clickable-icon rounded-lg p-1 bg-transparent hover:bg-fuchsia-300 hover:text-white"
       >
-        <i class="i-heroicons-chevron-left-solid text-4" />
+        <i class="i-heroicons-chevron-left-solid text-4 md:text-6 text-black" />
       </button>
       <div use:melt={$heading} class="font-semibold text-magnum-800">
         {$headingValue}
       </div>
       <button
-        use:melt={$nextButton}
-        class="rounded-lg p-2 transition-all hover:bg-fuchsia-300"
+        on:click={(e) => {
+          e.preventDefault();
+          setYear(year + 10);
+        }}
+        class="clickable-icon rounded-lg p-1 bg-transparent hover:bg-fuchsia-300 hover:text-white"
       >
-        <i class="i-heroicons-chevron-right-solid text-4" />
+        <i class="i-heroicons-chevron-right-solid md:text-6 text-black" />
       </button>
     </header>
     <div class="flex items-center gap-2">

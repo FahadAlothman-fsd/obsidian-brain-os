@@ -1,7 +1,7 @@
 import { Component, MarkdownRenderer, Notice, TFile, moment } from 'obsidian';
 import type { App } from 'obsidian';
 import dayjs, { Dayjs } from 'dayjs';
-import { pluginStore } from '../store';
+import { pluginStore } from '../stores';
 import { get } from 'svelte/store'
 import { createFile } from './files';
 import { DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY } from '../constants';

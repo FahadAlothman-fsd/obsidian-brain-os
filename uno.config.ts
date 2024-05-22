@@ -25,6 +25,10 @@ export default defineConfig({
       'magnum-800': '#964516',
       'magnum-900': '#793a15',
       'magnum-950': '#411c09',
+    },
+    transitionProperty: {
+      'spacing': 'margin, padding',
+      'rounding': 'border-radius'
     }
   }
 });

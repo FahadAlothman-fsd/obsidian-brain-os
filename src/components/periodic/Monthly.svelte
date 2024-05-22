@@ -1,62 +1,75 @@
 <script lang="ts">
   import { Grid } from "../UI";
-  let size = 12;
+  let cols = 3;
 
   let grid: {
     id: string;
     title: string;
+    active: boolean;
     // icon: string;
     // component: any;
   }[] = [
     {
       id: "m1",
-      title: "1",
+      title: "Jan",
+      active: true,
     },
     {
       id: "m2",
-      title: "2",
+      title: "Feb",
+      active: false,
     },
     {
       id: "m3",
-      title: "3",
+      title: "Mar",
+      active: true,
     },
     {
       id: "m4",
-      title: "4",
+      title: "Apr",
+      active: false,
     },
     {
       id: "m5",
-      title: "5",
+      title: "May",
+      active: true,
     },
     {
       id: "m6",
-      title: "6",
+      title: "Jun",
+      active: false,
     },
     {
       id: "m7",
-      title: "7",
+      title: "Jul",
+      active: true,
     },
     {
       id: "m8",
-      title: "8",
+      title: "Aug",
+      active: false,
     },
     {
       id: "m9",
-      title: "9",
+      title: "Sep",
+      active: true,
     },
     {
       id: "m10",
-      title: "10",
+      title: "Oct",
+      active: false,
     },
     {
       id: "m11",
-      title: "11",
+      title: "Nov",
+      active: true,
     },
     {
       id: "m12",
-      title: "12",
+      title: "Dec",
+      active: false,
     },
   ];
 </script>
 
-<Grid {size} {grid} />
+<Grid textSize="text-sm" {cols} {grid} />

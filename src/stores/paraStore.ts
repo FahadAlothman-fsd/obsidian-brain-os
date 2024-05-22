@@ -1,8 +1,8 @@
 import { writable } from "svelte/store";
-import ObsidianNoteConnections from '../main'
+import BrainOS from '../main'
 
 
-const plugin = writable<ObsidianNoteConnections>();
+const plugin = writable<BrainOS>();
 
 
 export default { plugin }
