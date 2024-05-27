@@ -24,6 +24,9 @@ export class ParaView extends ItemView {
   async onOpen() {
     this.component = new Para({
       target: this.contentEl,
+      props: {
+        width: this.contentEl.innerWidth
+      }
     });
   }
 

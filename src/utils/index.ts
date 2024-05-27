@@ -1,9 +1,14 @@
-import { Component, MarkdownRenderer } from 'obsidian';
-import type { App } from 'obsidian';
-import { createFile } from './files.ts'
-import { createPeriodicFile } from './periodic.ts';
+import { Component, MarkdownRenderer } from "obsidian";
+import type { App } from "obsidian";
+import type { ClassValue } from "clsx";
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { createFile } from "./files"
+import { createPeriodicFile } from "./periodic";
 
-
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 
 
