@@ -5,6 +5,10 @@ import { I18N_MAP } from '../i18n';
 import { ERROR_MESSAGE } from '../constants';
 
 
+export function trimFile(file: TFile): string {
+  if (!file) return "";
+  return file.extension == "md" ? file.path.slice(0, -3) : file.path;
+}
 
 export async function createFile(
   app: App,

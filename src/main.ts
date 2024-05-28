@@ -15,7 +15,7 @@ import {
 } from "./views";
 import { pluginStore } from './stores';
 import type { PluginSettings, BrainSettings } from "./types";
-import { DEFAULT_SETTINGS } from "./SettingsTab";
+import { DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
 
 
 
@@ -59,6 +59,8 @@ export default class BrainOS extends Plugin {
     this.addRibbonIcon("shapes", "BOS: Integrator view", () => {
       this.activateIntegratorView();
     });
+
+    this.addSettingTab(new SettingTab(this.app, this));
   }
 
   onunload() {
