@@ -2,7 +2,7 @@ import { PluginSettingTab, Setting, debounce, normalizePath } from 'obsidian';
 import type { App } from 'obsidian';
 import type { PluginSettings, BrainSettings } from './types';
 import BrainOS from './main'
-import { FileSuggest } from './utils/suggesters';
+import { FileSuggest, FolderSuggest } from './utils/suggesters';
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   templatePath: 'Templates',
@@ -75,7 +75,8 @@ export class SettingTab extends PluginSettingTab {
     if (this.plugin.settings.usePeriodicNotes) {
       new Setting(containerEl)
         .setName('Periodic Notes Folder:')
-        .addText((text) =>
+        .addText((text) => {
+          new FolderSuggest(this.app, text.inputEl);
           text
             .setPlaceholder(DEFAULT_SETTINGS.periodicNotesPath)
             .setValue(this.plugin.settings.periodicNotesPath)
@@ -83,8 +84,8 @@ export class SettingTab extends PluginSettingTab {
               debounce(async (value) => {
                 this.plugin.settings.periodicNotesPath = value;
                 await this.plugin.saveSettings();
-              }, 500)
-            )
+              }, 500))
+        }
         );
 
       new Setting(containerEl)
