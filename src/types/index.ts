@@ -26,6 +26,11 @@ export type TabsType = {
   component: any;
 }[];
 
+export type Tag = {
+  value: string;
+  count: number;
+};
+
 
 export interface BrainSettings {
   para: paraType

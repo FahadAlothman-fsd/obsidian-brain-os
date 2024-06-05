@@ -14,13 +14,19 @@ import {
   MediaConsumptionView, MEDIA_CONSUMPTION_VIEW,
   IntegratorView, INTEGRATOR_VIEW
 } from "./views";
+import { plugin, tagsStore } from './stores';
 import type { PluginSettings, BrainSettings } from "./types";
 import { DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
 
 
+type tagPageEvent = {
+  tag: string
+  file?: TFile | Promise<TFile>
+}
+
+
 
 export default class BrainOS extends Plugin {
-  settings!: PluginSettings;
   settings!: BrainSettings;
 
   async loadSettings() {
@@ -38,7 +44,15 @@ export default class BrainOS extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    pluginStore.plugin.set(this)
+    plugin.set(this)
+    tagsStore.set(Object.entries(
+      // @ts-ignore comment
+      this.app.metadataCache.getTags() as Record<string, number>,
+    )
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag, count]) => {
+        return { value: tag, count: count };
+      }))
     this.registerView(VIEW_TYPE_EXAMPLE, (leaf) => new ExampleView(leaf));
     this.registerView(PARA_VIEW, (leaf) => new ParaView(leaf));
     this.registerView(PERIODIC_VIEW, (leaf) => new PeriodicView(leaf));
@@ -64,6 +78,20 @@ export default class BrainOS extends Plugin {
     this.addRibbonIcon("shapes", "BOS: Integrator view", () => {
       this.activateIntegratorView();
     });
+
+
+    // // @ts-ignore comment
+    // this.registerEvent(this.app.workspace.on("tag-page:did-create", (evt: tagPageEvent) => {
+    //   console.log('updated tags')
+    //   tagsStore.set(Object.entries(
+    //     // @ts-ignore comment
+    //     this.app.metadataCache.getTags() as Record<string, number>,
+    //   )
+    //     .sort((a, b) => b[1] - a[1])
+    //     .map(([tag, count]) => {
+    //       return { value: tag, count: count };
+    //     }))
+    // }));
 
     this.addSettingTab(new SettingTab(this.app, this));
   }

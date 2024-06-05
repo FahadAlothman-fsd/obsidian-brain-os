@@ -6,65 +6,15 @@
     type ComboboxOptionProps,
   } from "@melt-ui/svelte";
   import { fly } from "svelte/transition";
+  import { app, tagsStore } from "../../stores";
+  import { derived } from "svelte/store";
+  import { getAllTags } from "obsidian";
 
-  type Manga = {
-    author: string;
-    title: string;
-    disabled: boolean;
+  type Tag = {
+    value: string;
+    count: number;
   };
 
-  let mangas: Manga[] = [
-    {
-      author: "Kentaro Miura",
-      title: "Berserk",
-      disabled: false,
-    },
-    {
-      author: "ONE",
-      title: "Mob Psycho 100",
-      disabled: false,
-    },
-    {
-      author: "Hajime Isayama",
-      title: "Attack on Titan",
-      disabled: false,
-    },
-    {
-      author: "Junji Ito",
-      title: "Uzumaki",
-      disabled: false,
-    },
-    {
-      author: "Yomi Sarachi",
-      title: "Steins Gate",
-      disabled: false,
-    },
-    {
-      author: "Tite Kubo",
-      title: "Bleach",
-      disabled: false,
-    },
-    {
-      author: "Masashi Kishimoto",
-      title: "Naruto",
-      disabled: true,
-    },
-    {
-      author: "Katsura Hoshino",
-      title: "D.Gray Man",
-      disabled: false,
-    },
-    {
-      author: "Tsugumi Ohba",
-      title: "Death Note",
-      disabled: false,
-    },
-    {
-      author: "Hiromu Arakawa",
-      title: "Fullmetal Alchemist",
-      disabled: false,
-    },
-  ];
   const {
     elements: { root, tag, deleteTrigger, edit },
     states: { tags },
@@ -78,17 +28,16 @@
     addOnPaste: true,
   });
 
-  const toOption = (manga: Manga): ComboboxOptionProps<Manga> => ({
-    value: manga,
-    label: manga.title,
-    disabled: manga.disabled,
+  const toOption = (tag: Tag): ComboboxOptionProps<Tag> => ({
+    value: tag,
+    label: tag.value,
   });
 
   const {
     elements: { menu, input, option, label },
     states: { open, inputValue, touchedInput, selected },
     helpers: { isSelected },
-  } = createCombobox<Manga>({
+  } = createCombobox<Tag>({
     forceVisible: true,
   });
 
@@ -100,15 +49,12 @@
     }
   }
 
-  $: filteredMangas = $touchedInput
-    ? mangas.filter(({ title, author }) => {
+  $: filteredTags = $touchedInput
+    ? $tagsStore.filter(({ value, count }) => {
         const normalizedInput = $inputValue.toLowerCase();
-        return (
-          title.toLowerCase().includes(normalizedInput) ||
-          author.toLowerCase().includes(normalizedInput)
-        );
+        return value.toLowerCase().includes(normalizedInput);
       })
-    : mangas;
+    : $tagsStore;
 </script>
 
 <div class="flex flex-col items-start justify-center gap-2">
@@ -144,7 +90,7 @@
       use:melt={$input}
       type="text"
       placeholder="Enter tags..."
-      class="min-w-[4.5rem] shrink grow basis-0 border-0 text-black outline-none focus:!ring-0 data-[invalid]:text-red-500"
+      class="min-w-[4.5rem] grow basis-0 border-0 text-black outline-none focus:!ring-0 data-[invalid]:text-red-500"
       style="background: transparent; border: none; color: black;"
     />
   </div>
@@ -157,25 +103,28 @@
     >
       <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
       <div
-        class="flex max-h-full min-w-full flex-col gap-0 overflow-y-auto bg-white px-2 py-2 text-black"
+        class="flex max-h-full rounded-lg min-w-full flex-col gap-0 overflow-y-auto bg-white px-2 py-2 text-black"
         tabindex="0"
       >
-        {#each filteredMangas as manga, index (index)}
+        {#each filteredTags as tag, index (index)}
           <li
-            use:melt={$option(toOption(manga))}
+            use:melt={$option(toOption(tag))}
             class="relative cursor-pointer scroll-my-2 rounded-md py-2 pl-4 pr-4
         hover:bg-magnum-100
         data-[highlighted]:bg-magnum-200 data-[highlighted]:text-magnum-900
           data-[disabled]:opacity-50"
           >
-            {#if $isSelected(manga)}
-              <div class="absolute left-2 top-1/2 z-10 text-magnum-900">
-                <i class="i-heroicons-check text-4" />
+            {#if $isSelected(tag)}
+              <div
+                class="absolute left-2 top-1/2 z-10 text-magnum-900"
+                style="translate: calc(-50% + 1px);"
+              >
+                <i class="i-material-symbols-check-small text-4" />
               </div>
             {/if}
             <div class="pl-4">
-              <span class="font-medium">{manga.title}</span>
-              <span class="block text-sm opacity-75">{manga.author}</span>
+              <span class="font-medium">{tag.value}</span>
+              <span class="block text-sm opacity-75">{tag.count}</span>
             </div>
           </li>
         {:else}

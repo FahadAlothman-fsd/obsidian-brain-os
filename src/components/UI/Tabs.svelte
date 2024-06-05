@@ -53,7 +53,7 @@
     {/each}
   </div>
   {#each triggers as triggerItem}
-    <div use:melt={$content(triggerItem.id)} class={"grow p-4 "}>
+    <div use:melt={$content(triggerItem.id)} class={"grow py-4"}>
       <svelte:component this={triggerItem.component} />
     </div>
   {/each}
