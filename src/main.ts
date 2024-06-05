@@ -3,6 +3,7 @@ import type {
   App,
   MarkdownPostProcessorContext,
   PluginManifest,
+  TFile
 } from 'obsidian';
 import "virtual:uno.css";
 import { DataviewApi, getAPI, isPluginEnabled } from 'obsidian-dataview';
@@ -13,7 +14,6 @@ import {
   MediaConsumptionView, MEDIA_CONSUMPTION_VIEW,
   IntegratorView, INTEGRATOR_VIEW
 } from "./views";
-import { pluginStore } from './stores';
 import type { PluginSettings, BrainSettings } from "./types";
 import { DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
 
@@ -21,9 +21,14 @@ import { DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
 
 export default class BrainOS extends Plugin {
   settings!: PluginSettings;
+  settings!: BrainSettings;
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    let data = await this.loadData()
+    this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
+    if (Object.entries(data).length !== 0) {
+      this.settings = JSON.parse(JSON.stringify(data))
+    }
   }
 
   async saveSettings() {

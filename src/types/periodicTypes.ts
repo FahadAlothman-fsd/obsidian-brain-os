@@ -20,25 +20,23 @@ export interface PluginSettings {
 
 export type PeriodicType = {
   usePeriodicNotes: boolean;
+  periodicFolder: string // should be path
   daily: {
-    template: string;
-    folder: string; // should be path
+    template: string; // should be path
+    habitHeader: string;
+    dailyRecordHeader: string;
   }
   weekly: {
-    template: string;
-    folder: string; // should be path
+    template: string; // should be path
   }
   monthly: {
-    template: string;
-    folder: string; // should be path
+    template: string; // should be path
   }
   quarterly: {
-    template: string;
-    folder: string; // should be path
+    template: string; // should be path
+    areaListHeader: string;
   }
-
   yearly: {
-    template: string;
-    folder: string; // should be path
+    template: string; // should be path
   }
 }
