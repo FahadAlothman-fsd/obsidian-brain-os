@@ -1,7 +1,7 @@
 import { Component, MarkdownRenderer, Notice, TFile, moment } from 'obsidian';
 import type { App } from 'obsidian';
 import dayjs, { Dayjs } from 'dayjs';
-import { pluginStore } from '../stores';
+import { app } from '../stores';
 import { get } from 'svelte/store'
 import { createFile } from './files';
 import { DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY } from '../constants';
@@ -12,9 +12,8 @@ export async function createPeriodicFile(
   periodicNotesPath: string,
   templatePath: string,
 ): Promise<void> {
-
-  const app = get(pluginStore.app)
-  if (!app || !periodicNotesPath) {
+  const application = get(app)
+  if (!application || !periodicNotesPath) {
     return;
   }
 
@@ -51,7 +50,7 @@ export async function createPeriodicFile(
   // templateFile = `${periodicNotesPath}/Templates/${periodType}.md`;
   templateFile = `${templatePath}/${periodType}.md`;
 
-  await createFile(app, {
+  await createFile(application, {
     locale,
     templateFile,
     folder,

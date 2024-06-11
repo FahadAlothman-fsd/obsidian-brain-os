@@ -1,15 +1,26 @@
+<svelte:options immutable />
+
 <script lang="ts">
   import {
     createCombobox,
     melt,
     type ComboboxOptionProps,
+    type CreateComboboxProps,
   } from "@melt-ui/svelte";
   import { fly } from "svelte/transition";
   import { app, tagsStore } from "../../stores";
+  import type { field } from "svelte-forms";
+  import { onMount } from "svelte";
+  import { writable } from "svelte/store";
 
   export let title = "Label";
   export let placeholder = "Placeholder";
-  export let value: string;
+  export let error: boolean;
+  export let inputField: ReturnType<typeof field>;
+  export let shouldOpen: (
+    inputValue: string,
+    selected: string,
+  ) => boolean | undefined;
 
   type Tag = {
     value: string;
@@ -21,24 +32,63 @@
     label: tag.value,
   });
 
+  const handleOpen: CreateComboboxProps["onOpenChange"] = ({ next }) => {
+    if (
+      typeof shouldOpen !== undefined &&
+      $selected &&
+      $selected.label &&
+      !shouldOpen($inputValue, $selected.label)
+    ) {
+      inputField.set($inputValue);
+      console.log("should close");
+      return false;
+    }
+    if (!next) {
+      $inputValue = $selected?.label ?? "";
+      inputField.set($inputValue);
+    }
+
+    return next;
+  };
   const {
     elements: { menu, input, option, label },
-    states: { open, inputValue, touchedInput, selected },
+    states: { inputValue, open, touchedInput, selected },
     helpers: { isSelected },
   } = createCombobox<Tag>({
-    forceVisible: true,
+    onOpenChange: handleOpen,
   });
 
-  $: if (!$open) {
-    if (
-      $selected &&
-      $inputValue.substring(0, $inputValue.lastIndexOf("/")) === $selected.label
-    ) {
-      $inputValue = $inputValue;
-    } else if ($selected) {
-      $inputValue = $selected.label ?? "";
-    }
-  }
+  // $: if (!$open) {
+  //   console.log($open);
+  //   if (
+  //     $selected &&
+  //     $inputValue.substring(0, $inputValue.lastIndexOf("/")) === $selected.label
+  //   ) {
+  //     console.log($inputValue.substring(0, $inputValue.lastIndexOf("/")));
+  //     console.log($selected);
+  //     $inputValue = $inputValue;
+  //     inputField.set($inputValue);
+  //   } else if ($selected) {
+  //     $inputValue = $selected.label ?? "";
+  //     inputField.set($inputValue);
+  //   }
+  // }
+  // $: if ($touchedInput) {
+  //   if (
+  //     typeof shouldOpen !== undefined &&
+  //     $selected &&
+  //     $selected.label &&
+  //     !shouldOpen($selected.label)
+  //   ) {
+  //     console.log("force close");
+  //     open.set(false);
+  //   } else {
+  //     console.log("open menu");
+  //     console.log(typeof shouldOpen !== undefined);
+  //     console.log($selected);
+  //     open.set(true);
+  //   }
+  // }
 
   $: filteredTags = $touchedInput
     ? $tagsStore.filter(({ value, count }) => {
@@ -46,6 +96,8 @@
         return value.toLowerCase().includes(normalizedInput);
       })
     : $tagsStore;
+
+  onMount(() => tagsStore.reload());
 </script>
 
 <div class="flex flex-col gap-1">
@@ -57,11 +109,16 @@
   <div class="relative">
     <input
       use:melt={$input}
-      bind:value
       class="flex h-10 items-center justify-between rounded-lg bg-white min-w-full
           px-3 pr-12 text-black"
       {placeholder}
     />
+
+    {#each $inputField.errors as validationErrors}
+      <p class="mt-2 text-sm text-red-600" id={`${$inputField.name}-error`}>
+        {validationErrors}
+      </p>
+    {/each}
     <div class="absolute right-2 top-1/2 z-10 -translate-y-1/2 text-magnum-900">
       {#if $open}
         <i class="i-heroicons-chevron-up-16-solid text-4" />

@@ -1,42 +1,95 @@
+<!-- <section> -->
+<!--   <input type="text" bind:value={$name.value} /> -->
+<!--   {#if $myForm.hasError("name.required")} -->
+<!--     <div>Name is required</div> -->
+<!--   {/if} -->
+<!---->
+<!--   <button disabled={!$myForm.valid}>Send form</button> -->
+<!-- </section> -->
 <script lang="ts">
+  import { get } from "svelte/store";
+  import { form, field } from "svelte-forms";
+  import { required } from "svelte-forms/validators";
+  import { tagsStore } from "../../../stores";
+  import { tagExists } from "../../../utils";
   import ComboBox from "../../UI/ComboBox.svelte";
   import Input from "../../UI/Input.svelte";
   import TagInput from "../../UI/TagInput.svelte";
 
-  let projectTag: string = "";
-  let projectFolder: string;
-  let projectIndex: string;
+  const projectTag = field("project_tag", "", [required()], {
+    validateOnChange: true,
+  });
+  const projectFolder = field("project_folder", "", [required()], {
+    validateOnChange: true,
+  });
+  const projectIndex = field("project_index", "", [required()], {
+    validateOnChange: true,
+  });
+  const createProjectForm = form(projectTag, projectFolder, projectIndex);
 
-  $: if (projectTag.length > 0) {
-    projectFolder = projectTag.substring(projectTag.lastIndexOf("/") + 1);
-    projectIndex =
-      projectTag.substring(projectTag.lastIndexOf("/") + 1) + ".README.md";
-  }
+  projectTag.subscribe((prjTag) => {
+    if (prjTag.value.length > 0) {
+      const projectName = prjTag.value.substring(
+        prjTag.value.lastIndexOf("/") + 1,
+      );
+      if (projectName === "") {
+        projectFolder.set("");
+        projectIndex.set("");
+      } else if (!tagExists($tagsStore, prjTag.value)) {
+        projectFolder.set(projectName);
+        projectIndex.set(`${projectName}.README.md`);
+      }
+    }
+  });
 
-  const handleCreateProject = () => {};
+  const handleShouldOpen = (inputValue: string, selected: string) => {
+    const prjTag = get(projectTag);
+    let open = true;
+
+    const tag = inputValue.split("/");
+    tag.forEach((value, index) => {
+      if (tag.slice(0, index).join("") === selected) {
+        open = true;
+        return;
+      }
+    });
+    if (inputValue.length < selected.length) {
+      return true;
+    }
+
+    return (
+      prjTag.value.substring(prjTag.value.lastIndexOf("/") + 1) === selected
+    );
+  };
+
+  // const handleCreateProject = () => {};
 </script>
 
 <div class="flex flex-col gap-3 p-2">
   <ComboBox
-    bind:value={projectTag}
+    inputField={projectTag}
     title={"Tag"}
     placeholder={"#area/sub-area/project..."}
+    error={$createProjectForm.hasError("projectTag.required")}
+    shouldOpen={handleShouldOpen}
   />
   <Input
     title={"Folder"}
     placeholder={"project..."}
-    bind:value={projectFolder}
+    inputField={projectFolder}
+    error={$createProjectForm.hasError("projectFolder.required")}
   />
   <Input
     title={"Entry"}
     placeholder={"project.README.md..."}
-    bind:value={projectIndex}
+    inputField={projectIndex}
+    error={$createProjectForm.hasError("projectIndex.required")}
   />
   <hr />
   <TagInput />
   <button
     type="button"
-    on:click={handleCreateProject}
+    disabled={!$createProjectForm.valid}
     class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-indigo-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
   >
     <svg
