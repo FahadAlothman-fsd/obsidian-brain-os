@@ -1,6 +1,6 @@
-import { Component, MarkdownRenderer, Notice, TFile, moment } from 'obsidian';
-import type { App } from 'obsidian';
 import dayjs, { Dayjs } from 'dayjs';
+import type { App, TAbstractFile, TagCache } from 'obsidian';
+import { Component, MarkdownRenderer, Notice, TFile, moment } from 'obsidian';
 import { I18N_MAP } from '../i18n';
 import { ERROR_MESSAGE } from '../constants';
 
@@ -13,7 +13,7 @@ export function trimFile(file: TFile): string {
 export async function createFile(
   app: App,
   options: {
-    locale: string;
+    // locale: string;
     templateFile: string;
     folder: string;
     file: string;
@@ -25,12 +25,12 @@ export async function createFile(
     return;
   }
 
-  const { templateFile, folder, file, tag, locale } = options;
-  const templateTFile = app.vault.getAbstractFileByPath(templateFile!);
+  const { templateFile, folder, file, tag } = options;
+  const templateTFile = app.vault.getAbstractFileByPath(templateFile);
 
   if (!templateTFile) {
     return new Notice(
-      I18N_MAP[locale][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`] + templateFile
+      I18N_MAP['en-us'][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`] + templateFile
     );
   }
 

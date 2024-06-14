@@ -273,6 +273,22 @@ export class SettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Project Template:')
+      .setDesc("The template for the project's README file")
+      .addText((text) => {
+        new FileSuggest(this.app, text.inputEl);
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.projects.template)
+          .setValue(this.plugin.settings.para.projects.template)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.projects.template = value;
+              await this.plugin.saveSettings();
+            }, 500))
+      }
+      );
+
+    new Setting(containerEl)
       .setName('Area Folder:')
       .setDesc('Where all your areas of interest will be placed')
       .addText((text) => {
@@ -283,6 +299,22 @@ export class SettingTab extends PluginSettingTab {
           .onChange(
             debounce(async (value) => {
               this.plugin.settings.para.areas.folder = value;
+              await this.plugin.saveSettings();
+            }, 500))
+      }
+      );
+
+    new Setting(containerEl)
+      .setName('Area Template:')
+      .setDesc("The template for the area's README file")
+      .addText((text) => {
+        new FileSuggest(this.app, text.inputEl);
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.areas.template)
+          .setValue(this.plugin.settings.para.areas.template)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.areas.template = value;
               await this.plugin.saveSettings();
             }, 500))
       }

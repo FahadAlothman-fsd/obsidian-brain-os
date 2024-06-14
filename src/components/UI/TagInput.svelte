@@ -9,18 +9,25 @@
   import { app, tagsStore } from "../../stores";
   import { derived } from "svelte/store";
   import { getAllTags } from "obsidian";
+  import type { field } from "svelte-forms";
+
+  export let title = "label";
+  export let placeholder = "placeholder";
+  export let error: boolean;
+  export let inputField: ReturnType<typeof field<Tag[]>>;
 
   type Tag = {
     value: string;
     count: number;
   };
+  const initialTags = $inputField.value ?? [];
 
   const {
     elements: { root, tag, deleteTrigger, edit },
     states: { tags },
     helpers: { addTag },
   } = createTagsInput({
-    defaultTags: ["Svelte", "Typescript"],
+    defaultTags: [],
     unique: true,
     add(tag) {
       return { id: tag, value: tag };
@@ -44,6 +51,13 @@
   $: if (!$open) {
     $inputValue = "";
     if ($selected?.label) {
+      inputField.update((values) => {
+        values.value.push({
+          value: $selected.value.value,
+          count: $selected.value.count,
+        });
+        return values;
+      });
       addTag($selected.label);
       // $inputValue = $selected.label;
     }

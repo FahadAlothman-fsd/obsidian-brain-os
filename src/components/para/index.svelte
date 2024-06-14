@@ -1,7 +1,7 @@
 <script lang="ts">
   import Tabs from "../UI/Tabs.svelte";
-  import ProjectsTab from "./Projects.svelte";
-  import AreasTab from "./Areas.svelte";
+  import ProjectsTab from "./projects/index.svelte";
+  import AreasTab from "./areas/index.svelte";
   import ResourcesTab from "./Resources.svelte";
   import ArchivesTab from "./Archives.svelte";
   import type { TabsType } from "../../types";

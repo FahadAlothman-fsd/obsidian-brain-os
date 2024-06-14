@@ -19,9 +19,14 @@
   const projectIndex = field("project_index", "", [required()], {
     validateOnChange: true,
   });
-  const projectRelatedAreas = field<Tag[]>("project_related_areas", [], [], {
-    validateOnChange: true,
-  });
+  const projectRelatedAreas = field<Tag[]>(
+    "project_related_areas",
+    [],
+    [required()],
+    {
+      validateOnChange: true,
+    },
+  );
   const createProjectForm = form(
     projectTag,
     projectFolder,
@@ -96,7 +101,6 @@
       data.para_tag !== "" &&
       data.folder_path !== ""
     ) {
-      console.log(data);
       await createPARAFile(data, brainOS.app, brainOS.settings, "Project");
     } else {
       // TODO: display error indicating that information added is not correct
