@@ -18,7 +18,7 @@
 
 <div
   class={cn(
-    "mx-auto w-[18rem] max-w-full rounded-xl bg-white shadow-lg sm:w-[25rem]",
+    "mx-auto min-width-full max-w-full rounded-xl bg-white shadow-lg",
     className,
   )}
   {...$root}

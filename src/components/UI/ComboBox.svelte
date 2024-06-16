@@ -11,8 +11,10 @@
   import { app, tagsStore } from "../../stores";
   import type { field } from "svelte-forms";
   import { onMount } from "svelte";
-  import { writable } from "svelte/store";
+  import { writable, type Unsubscriber } from "svelte/store";
 
+  // TODO: make this so the parent component passes the options
+  export let opts = $tagsStore;
   export let title = "Label";
   export let placeholder = "Placeholder";
   export let error: boolean;
@@ -32,6 +34,7 @@
     label: tag.value,
   });
 
+  let unsubInputField: Unsubscriber | undefined;
   const handleOpen: CreateComboboxProps["onOpenChange"] = ({ next }) => {
     if (
       typeof shouldOpen !== undefined &&
@@ -40,12 +43,18 @@
       !shouldOpen($inputValue, $selected.label)
     ) {
       inputField.set($inputValue);
-      console.log("should close");
+      unsubInputField = inputValue.subscribe((val) => {
+        inputField.set(val);
+      });
       return false;
     }
     if (!next) {
       $inputValue = $selected?.label ?? "";
       inputField.set($inputValue);
+    }
+    if (next && unsubInputField !== undefined) {
+      unsubInputField();
+      unsubInputField = undefined;
     }
 
     return next;
@@ -58,46 +67,16 @@
     onOpenChange: handleOpen,
   });
 
-  // $: if (!$open) {
-  //   console.log($open);
-  //   if (
-  //     $selected &&
-  //     $inputValue.substring(0, $inputValue.lastIndexOf("/")) === $selected.label
-  //   ) {
-  //     console.log($inputValue.substring(0, $inputValue.lastIndexOf("/")));
-  //     console.log($selected);
-  //     $inputValue = $inputValue;
-  //     inputField.set($inputValue);
-  //   } else if ($selected) {
-  //     $inputValue = $selected.label ?? "";
-  //     inputField.set($inputValue);
-  //   }
-  // }
-  // $: if ($touchedInput) {
-  //   if (
-  //     typeof shouldOpen !== undefined &&
-  //     $selected &&
-  //     $selected.label &&
-  //     !shouldOpen($selected.label)
-  //   ) {
-  //     console.log("force close");
-  //     open.set(false);
-  //   } else {
-  //     console.log("open menu");
-  //     console.log(typeof shouldOpen !== undefined);
-  //     console.log($selected);
-  //     open.set(true);
-  //   }
-  // }
-
   $: filteredTags = $touchedInput
-    ? $tagsStore.filter(({ value, count }) => {
+    ? opts.filter(({ value, count }) => {
         const normalizedInput = $inputValue.toLowerCase();
         return value.toLowerCase().includes(normalizedInput);
       })
     : $tagsStore;
 
   onMount(() => tagsStore.reload());
+  // TODO: make it so that you can add a prefix and a suffix for the input that will let the use know
+  // that the input will contain the prefix or suffix when submitted
 </script>
 
 <div class="flex flex-col gap-1">

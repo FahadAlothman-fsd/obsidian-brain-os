@@ -5,6 +5,7 @@ import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { createFile } from "./files"
 import { createPeriodicFile } from "./periodic";
+import { createPARAFile } from "./para";
 import type { Tag } from "../types";
 
 export function cn(...inputs: ClassValue[]) {
@@ -35,6 +36,6 @@ function renderError(
 
 export default {
   sleep, renderError,
-  createFile, createPeriodicFile
+  createFile, createPeriodicFile, createPARAFile,
 }
 

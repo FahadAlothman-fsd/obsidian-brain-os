@@ -22,6 +22,7 @@
   const projectRelatedAreas = field<Tag[]>("project_related_areas", [], [], {
     validateOnChange: true,
   });
+  // TODO: add a templates tagsinput like but the suggestions being templates for this project
   const createProjectForm = form(
     projectTag,
     projectFolder,
@@ -80,15 +81,25 @@
 
     let data: PARAType = { para_tag: "", entry_file: "", folder_path: "" };
     if (formData["project_tag"]) {
+      // TODO: check that the project tag doesn't exist
       data.para_tag = formData["project_tag"];
     }
 
     if (formData["project_folder"]) {
+      // TODO: check that the project folder doesn't exist inside the projects folder
       data.folder_path = formData["project_folder"];
     }
 
     if (formData["project_index"]) {
+      // TODO: check that the index file is in the correct format for a name of a file
       data.entry_file = formData["project_index"];
+    }
+
+    if (
+      formData["project_related_areas"] &&
+      formData["project_related_areas"].length > 0
+    ) {
+      // TODO: check that the main area is not tagged here
     }
 
     if (

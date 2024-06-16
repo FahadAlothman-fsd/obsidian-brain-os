@@ -5,18 +5,8 @@
 
   const sections = [
     { id: "create-project", title: "Create Project", component: CreateProject },
-  ];
-  const flavors = [
-    "hehe",
-    "bobo",
-    "hehe",
-    "bobo",
-    "hehe",
-    "bobo",
-    "hehe",
-    "bobo",
-    "hehe",
-    "bobo",
+    // TODO: add an edit project that uses the same component as create but fills in the info
+    // it should be only when a project README is open
   ];
 </script>
 
