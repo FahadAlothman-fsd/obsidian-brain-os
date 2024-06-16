@@ -23,6 +23,10 @@ export const createPARAFile = async (values: PARAType, app: App, settings: Brain
   let path = '';
   if (type === "Area" || type === "Sub-Area") {
 
+    // TODO: for the sub-area, you should do the following:
+    // - look if the tag before the sub-area's tag exists 
+    // - look for a README file that has this parent tag and get the folder of parent area
+    // - insert the parent folder at the beginning of the path 
     path = settings.para.areas.folder
     templateFile = settings.para.areas.template
 
