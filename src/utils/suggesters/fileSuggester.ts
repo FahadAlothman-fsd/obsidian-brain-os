@@ -27,7 +27,7 @@ export class FileSuggest extends AbstractInputSuggest<TFile> {
       el.setText(trimFile(file));
     }
     else {
-      //we don't use trimFile here as the extension isn't displayed here
+      // we don't use trimFile here as the extension isn't displayed here
       el.setText(file.path.slice(0, -7))
       el.insertAdjacentHTML(
         "beforeend",

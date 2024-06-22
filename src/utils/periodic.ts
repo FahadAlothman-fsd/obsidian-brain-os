@@ -1,9 +1,8 @@
-import { Component, MarkdownRenderer, Notice, TFile, moment } from 'obsidian';
+import { Component, MarkdownRenderer, Notice, TFile } from 'obsidian';
 import type { App } from 'obsidian';
 import dayjs, { Dayjs } from 'dayjs';
-import { app } from '../stores';
-import { get } from 'svelte/store'
 import { createFile } from './files';
+import moment from 'moment';
 import { DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY } from '../constants';
 
 export async function createPeriodicFile(
@@ -11,21 +10,23 @@ export async function createPeriodicFile(
   periodType: string,
   periodicNotesPath: string,
   templatePath: string,
+  app: App
 ): Promise<void> {
-  const application = get(app)
-  if (!application || !periodicNotesPath) {
+  if (!app || !periodicNotesPath) {
     return;
   }
 
   const locale = window.localStorage.getItem('language') || 'en';
-  const date = dayjs(day.format()).locale(locale);
+  const bate = dayjs(day.format()).locale(locale);
+  const date = moment(bate.format("YYYY-MM-DD"))
+  console.log(date)
 
   let templateFile = '';
   let folder = '';
   let file = '';
 
   const year = date.format('YYYY');
-  let value: string = '';
+  let value = '';
 
   if (periodType === DAILY) {
     folder = `${periodicNotesPath}/${year}/${periodType}/${String(
@@ -41,6 +42,7 @@ export async function createPeriodicFile(
   } else if (periodType === QUARTERLY) {
     folder = `${periodicNotesPath}/${year}/${periodType}`;
     value = date.format('YYYY-[Q]Q');
+    console.log(value)
   } else if (periodType === YEARLY) {
     folder = `${periodicNotesPath}/${year}`;
     value = year;
@@ -48,9 +50,9 @@ export async function createPeriodicFile(
 
   file = `${folder}/${value}.md`;
   // templateFile = `${periodicNotesPath}/Templates/${periodType}.md`;
-  templateFile = `${templatePath}/${periodType}.md`;
+  templateFile = `${templatePath}.md`;
 
-  await createFile(application, {
+  await createFile(app, {
     locale,
     templateFile,
     folder,

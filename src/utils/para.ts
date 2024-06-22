@@ -1,14 +1,144 @@
-import type { App } from "obsidian";
+import { TFolder, type App, TFile, TAbstractFile } from "obsidian";
 import type { BrainSettings } from "../types";
 import { createFile } from "./files";
+import { PROJECT, AREA, SUB_AREA } from "../constants";
 
-export type PARAType = {
+export type createPARADataType = {
   entry_file: string;
   para_tag: string;
   folder_path: string;
 }
+export type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA
+export type findPARAFileConditionsType = {
+  tags: string[];
+}
 
-export const createPARAFile = async (values: PARAType, app: App, settings: BrainSettings, type: "Project" | "Area" | "Sub-Area") => {
+export const findParaFile = async (
+  conditions: findPARAFileConditionsType,
+  app: App,
+  settings: BrainSettings,
+  type: PARATypes) => {
+
+  if (!app || !settings) {
+    // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
+    return;
+  }
+  let dir: string
+  // Setting root dir for searching
+  switch (type) {
+
+    case "Project": {
+
+      dir = settings.para.projects.folder
+      break;
+    }
+    case "Sub-area":
+    case "Area": {
+
+      dir = settings.para.areas.folder
+      break;
+    }
+  }
+
+  const folder = app.vault.getAbstractFileByPath(dir);
+
+  if (folder instanceof TFolder) {
+
+    // DFS for all areas and sub-areas in the areas root folder
+    const stack = [folder]
+    const visited = new Set<TAbstractFile>()
+    const result: TAbstractFile[] = []
+
+    while (stack.length) {
+      const vertex = stack.pop()
+
+      if (vertex !== undefined) {
+        if (!visited.has(vertex)) {
+          visited.add(vertex)
+
+          const { name } = vertex
+          const indexFile = vertex.children.find((file) => {
+            if ((file as TFile).basename === name) {
+              return true;
+            }
+            if (file.path.match(/(.*\.)?README\.md/)) {
+              return true;
+            }
+          });
+          if (indexFile !== undefined) {
+            result.push(indexFile)
+          }
+
+        }
+        for (const neighbor of vertex.children.sort().filter((file) => file instanceof TFolder)) {
+          stack.push(neighbor as TFolder);
+        }
+      }
+    }
+
+    const indexFile = result.find((file) => {
+
+      // check if the tags inside the README match the tags given in conditions
+      if (conditions.tags.length) {
+        // const fileTags = this.tags(indexFile?.path || '');
+
+        let fileTags: string[] = []
+        if (file instanceof TFile) {
+          const { frontmatter } = app.metadataCache.getFileCache(file) || {
+            frontmatter: {},
+          };
+
+          let tags = frontmatter?.tags;
+
+          if (!tags) {
+            tags = [];
+          }
+
+          if (typeof tags === 'string') {
+            tags = [tags];
+          }
+
+          fileTags = tags.map((tag: string) => tag.replace(/^#(.*)$/, '$1'));
+          fileTags = tags
+          console.log(fileTags)
+        }
+
+        // tags: #work/project-1 #work/project-2
+        // condition.tags: #work
+        console.log(fileTags, conditions.tags.map((tag: string) => tag.replace(/^#(.*)$/, '$1')))
+        if (hasCommonPrefix(fileTags, conditions.tags.map((tag: string) => tag.replace(/^#(.*)$/, '$1')))) {
+          return true;
+        }
+        // if (fileTags === conditions.tags) return true
+      }
+    })
+
+    return indexFile?.parent?.name
+
+
+  }
+}
+
+
+function hasCommonPrefix(tags1: string[], tags2: string[]) {
+  // TODO: this approach doesnt work because of tags that start with the same letters
+  // e.g. artificial & art.
+  // a better approach might be:
+  // - if you split the tags by the "/"
+  // - compare the tags (the strings need to entirely match) then return if they match
+  for (const tag1 of tags1) {
+    for (const tag2 of tags2) {
+      if (tag1.startsWith(tag2)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+
+export const createPARAFile = async (values: createPARADataType, app: App, settings: BrainSettings, type: "Project" | "Area" | "Sub-Area") => {
   if (!app || !settings) {
     // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
     return;

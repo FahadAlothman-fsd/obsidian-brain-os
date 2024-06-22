@@ -3,6 +3,7 @@
 <script lang="ts">
   import Dot from "./Dot.svelte";
   export let cols = 2;
+  export let handleOnClick;
 
   export let grid: {
     id: string;
@@ -14,17 +15,17 @@
   export let textSize: string = "text-xl";
   let gridClass = `grid p-2 gap-4 overflow-hidden`;
   let gridSizeClass = `grid-template-columns: repeat(${cols}, minmax(0, 1fr));`;
-  console.log(cols);
 </script>
 
-<div role="grid" class="mx-auto">
+<div role="grid" class="mx-auto min-w-full">
   <div class={gridClass} style={gridSizeClass}>
     {#each grid as gridSegment (gridSegment.id)}
       <div
         class={` ${gridSegment.active ? "bg-purple-400 rounded-lg -m-1.5" : "hover:rounded-lg hover:-m-1.5 bg-transparent"} sm:p-4 flex justify-center items-center hover:bg-pink-500 transition-rounding transition-spacing duration-300`}
         on:click={(e) => {
-          console.log(e);
-          console.log(cols);
+          // console.log(e);
+          // console.log(cols);
+          handleOnClick(gridSegment.id);
         }}
         tabindex="-1"
         role="gridcell"
