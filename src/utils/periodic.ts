@@ -1,12 +1,12 @@
 import { Component, MarkdownRenderer, Notice, TFile } from 'obsidian';
 import type { App } from 'obsidian';
-import dayjs, { Dayjs } from 'dayjs';
 import { createFile } from './files';
-import moment from 'moment';
 import { DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY } from '../constants';
+import { getLocalTimeZone, type DateValue } from '@internationalized/date';
+import type { Moment } from 'moment';
 
 export async function createPeriodicFile(
-  day: Dayjs,
+  day: Moment,
   periodType: string,
   periodicNotesPath: string,
   templatePath: string,
@@ -17,8 +17,7 @@ export async function createPeriodicFile(
   }
 
   const locale = window.localStorage.getItem('language') || 'en';
-  const bate = dayjs(day.format()).locale(locale);
-  const date = moment(bate.format("YYYY-MM-DD"))
+  const date = window.moment(day.format("YYYY-MM-DD"))
   console.log(date)
 
   let templateFile = '';
@@ -58,4 +57,15 @@ export async function createPeriodicFile(
     folder,
     file,
   });
+}
+
+
+
+
+export function getISOWeekNumber(date: DateValue) {
+
+  const locale = window.moment().locale()
+  const dateMoment = window.moment(date.toDate(getLocalTimeZone()))
+  const weekNum = dateMoment.format('w')
+  return weekNum;
 }

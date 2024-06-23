@@ -1,25 +1,64 @@
 <script lang="ts">
   import { createCalendar, melt } from "@melt-ui/svelte";
-  import { writable, derived } from "svelte/store";
+  import { writable, derived, get } from "svelte/store";
   import { onDestroy } from "svelte";
-  export let PeriodicType: "Day/Week" | "Monthly" | "Quarterly" | "Yearly";
+  import { field, form } from "svelte-forms";
+  import { createPeriodicFile, getISOWeekNumber } from "../../utils/periodic";
+  import { plugin } from "../../stores";
+  import { DAILY, WEEKLY } from "../../constants";
+  import {
+    CalendarDate,
+    CalendarDateTime,
+    ZonedDateTime,
+    endOfWeek,
+    getLocalTimeZone,
+    now,
+    parseDateTime,
+    startOfWeek,
+    type DateValue,
+  } from "@internationalized/date";
+  import { moment } from "obsidian";
+
+  const day = field("day", "");
+  const week = field("week", "");
+
+  const dayWeekForm = form(day);
 
   const {
     elements: { calendar, heading, grid, cell, prevButton, nextButton },
-    states: { months, headingValue, weekdays },
-    helpers: { isDateDisabled, isDateUnavailable, prevYear, nextYear, setYear },
-  } = createCalendar();
-  let year: number;
-
-  const year_unsub = headingValue.subscribe((value) => {
-    year = Math.floor(Number(value.split(" ")[1]) / 10) * 10;
-
-    console.log(`year: ${year}`);
+    states: { months, headingValue, weekdays, value },
+    helpers: { isDateDisabled, isDateUnavailable },
+  } = createCalendar({
+    locale: window.localStorage.getItem("language") || "en",
   });
-  $: console.log(
-    `month.value: ${$months[0].value}, date: ${$months[0].weeks[0][0]} `,
-  );
-  onDestroy(year_unsub);
+
+  $: if ($value) {
+    const brainOS = get(plugin);
+    // TODO: display error here indicating that the brainOS wasn't added correctly
+    if (brainOS !== undefined) {
+      createPeriodicFile(
+        window.moment($value.toDate(getLocalTimeZone())),
+        DAILY,
+        brainOS.settings.periodic.periodicFolder,
+        brainOS.settings.periodic.daily.template,
+        brainOS.app
+      );
+    }
+  }
+
+  const handleCreateWeekly = async (startOfWeek: DateValue) => {
+    const date = window.moment(startOfWeek, "YYYY-M-DD");
+    const brainOS = get(plugin);
+    if (brainOS !== undefined) {
+      await createPeriodicFile(
+        date,
+        WEEKLY,
+        brainOS.settings.periodic.periodicFolder,
+        brainOS.settings.periodic.weekly.template,
+        brainOS.app
+      );
+    }
+  };
 </script>
 
 <section>
@@ -29,10 +68,7 @@
   >
     <header class="flex items-center justify-between pb-2">
       <button
-        on:click={(e) => {
-          e.preventDefault();
-          prevYear();
-        }}
+        use:melt={$prevButton}
         class="clickable-icon rounded-lg p-1 bg-transparent hover:bg-fuchsia-300 hover:text-white"
       >
         <i class="i-heroicons-chevron-left-solid text-4 md:text-6 text-black" />
@@ -41,16 +77,13 @@
         {$headingValue}
       </div>
       <button
-        on:click={(e) => {
-          e.preventDefault();
-          setYear(year + 10);
-        }}
+        use:melt={$nextButton}
         class="clickable-icon rounded-lg p-1 bg-transparent hover:bg-fuchsia-300 hover:text-white"
       >
         <i class="i-heroicons-chevron-right-solid md:text-6 text-black" />
       </button>
     </header>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center">
       {#each $months as month}
         <table use:melt={$grid} class="w-full">
           <thead aria-hidden="true">
@@ -74,15 +107,20 @@
               <tr>
                 <td
                   role="gridcell"
-                  style="border-right: 1px solid black;"
-                  aria-disabled={$isDateDisabled(weekDates[0]) ||
-                    $isDateUnavailable(weekDates[0])}
+                  class="border-r-[2px] border-r-magnum-400 border-r-solid"
                 >
                   <div
-                    use:melt={$cell(weekDates[0], month.value)}
-                    class="flex h-6 w-6 cursor-pointer select-none items-center justify-center rounded-lg p-4 hover:bg-magnum-100 focus:ring focus:ring-magnum-400 data-[outside-visible-months]:pointer-events-none data-[outside-visible-months]:cursor-default data-[range-highlighted]:bg-magnum-200 data-[selected]:bg-magnum-300 data-[selected]:text-magnum-900 data-[disabled]:opacity-40 data-[outside-visible-months]:opacity-40 data-[outside-visible-months]:hover:bg-transparent"
+                    role="button"
+                    on:click={async (e) => {
+                      await handleCreateWeekly(
+                        startOfWeek(weekDates[0], window.moment().locale())
+                      );
+                    }}
+                    class="flex h-6 w-6 cursor-pointer select-none items-center justify-center rounded-lg p-4 hover:bg-magnum-300 focus:ring focus:ring-magnum-400"
                   >
-                    {weekDates[0].day}
+                    {getISOWeekNumber(
+                      startOfWeek(weekDates[0], moment.locale())
+                    )}
                   </div>
                 </td>
 

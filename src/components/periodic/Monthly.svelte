@@ -8,7 +8,6 @@
   import { MONTHLY } from "../../constants";
   import { Grid } from "../UI";
   import { moment } from "obsidian";
-  import dayjs from "dayjs";
   let cols = 3;
 
   const {
@@ -46,7 +45,7 @@
   });
 
   const handleCreateMonthly = async (periodicFileName: string) => {
-    const date = dayjs(`${periodicFileName}-12`, "YYYY-M-DD");
+    const date = window.moment(`${periodicFileName}-12`, "YYYY-M-DD");
     const brainOS = get(plugin);
     if (brainOS !== undefined) {
       await createPeriodicFile(

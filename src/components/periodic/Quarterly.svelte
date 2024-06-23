@@ -7,8 +7,6 @@
   import { plugin } from "../../stores";
   import { QUARTERLY } from "../../constants";
   import { Grid } from "../UI";
-  import { moment } from "obsidian";
-  import dayjs from "dayjs";
   let cols = 2;
 
   const {
@@ -49,7 +47,7 @@
   const handleCreateQuarterly = async (periodicFileName: string) => {
     const [year, quarter] = periodicFileName.split("-");
     const month = 1 + (Number(quarter) - 1) * 3;
-    const date = dayjs(`${year}-${month}-01`, "YYYY-MM-DD");
+    const date = window.moment(`${year}-${month}-01`, "YYYY-MM-DD");
     const brainOS = get(plugin);
     console.log(date);
     if (brainOS !== undefined) {

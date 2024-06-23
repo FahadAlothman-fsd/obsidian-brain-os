@@ -1,5 +1,4 @@
 <script lang="ts">
-  import dayjs from "dayjs";
   import { createCalendar, melt } from "@melt-ui/svelte";
   import { get } from "svelte/store";
   import { onDestroy } from "svelte";
@@ -50,7 +49,7 @@
   $: console.log($months);
 
   const handleCreateYearly = async (periodicFileName: string) => {
-    const date = dayjs(`${periodicFileName}-06-12`, "YYYY-MM-DD");
+    const date = window.moment(`${periodicFileName}-06-12`, "YYYY-MM-DD");
     const brainOS = get(plugin);
     if (brainOS !== undefined) {
       await createPeriodicFile(

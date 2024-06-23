@@ -36,3 +36,12 @@ export interface BrainSettings {
   para: paraType
   periodic: periodicType
 }
+
+
+
+
+export enum LogLevel {
+  'info',
+  'warn',
+  'error',
+}
