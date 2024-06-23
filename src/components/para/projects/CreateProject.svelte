@@ -8,7 +8,7 @@
   import Input from "../../UI/Input.svelte";
   import TagInput from "../../UI/TagInput.svelte";
   import type { Tag } from "../../../types";
-  import { createPARAFile, type PARAType } from "../../../utils/para";
+  import { createPARAFile, type createPARADataType } from "../../../utils/para";
 
   const projectTag = field("project_tag", "", [required()], {
     validateOnChange: true,
@@ -79,7 +79,11 @@
     // TODO: display error here indicating that the brainOS wasn't added correctly
     if (!brainOS) return;
 
-    let data: PARAType = { para_tag: "", entry_file: "", folder_path: "" };
+    let data: createPARADataType = {
+      para_tag: "",
+      entry_file: "",
+      folder_path: "",
+    };
     if (formData["project_tag"]) {
       // TODO: check that the project tag doesn't exist
       data.para_tag = formData["project_tag"];

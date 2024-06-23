@@ -6,7 +6,11 @@
   import { tagExists } from "../../../utils";
   import { Switch, Input, ComboBox, TagInput } from "../../UI";
   import type { Tag } from "../../../types";
-  import { createPARAFile, type PARAType } from "../../../utils/para";
+  import {
+    createPARAFile,
+    findParaFile,
+    type createPARADataType,
+  } from "../../../utils/para";
   import { onDestroy } from "svelte";
 
   const areaSwitch = field("area_switch", false);
@@ -39,7 +43,7 @@
     // projectRelatedAreas,
   );
 
-  const unsubForm = areaTag.subscribe((areaTag) => {
+  const unsubAreaSwitch = areaTag.subscribe((areaTag) => {
     const area_switch = get(areaSwitch);
     if (areaTag.value.length > 0) {
       const areaName = area_switch.value
@@ -52,6 +56,7 @@
         areaFolder.set("");
         areaIndex.set("");
       } else if (!tagExists($tagsStore, areaTag.value)) {
+        console.log(areaTag.value, areaName);
         areaFolder.set(areaName);
         areaIndex.set(`${areaName}.README.md`);
       }
@@ -84,20 +89,43 @@
   const handleCreateArea = async () => {
     createAreaForm.validate();
     // TODO: have a type in the para types file
-    let type: "Project" | "Area" | "Sub-Area" = "Area";
+    let type: "Project" | "Area" | "Sub-Area" = get(areaSwitch)
+      ? "Sub-Area"
+      : "Area";
     console.log(createAreaForm.summary());
     const formData = createAreaForm.summary();
     const brainOS = get(plugin);
     // TODO: display error here indicating that the brainOS wasn't added correctly
     if (!brainOS) return;
 
-    let data: PARAType = { para_tag: "", entry_file: "", folder_path: "" };
+    let data: createPARADataType = {
+      para_tag: "",
+      entry_file: "",
+      folder_path: "",
+    };
     if (formData["area_tag"]) {
       data.para_tag = formData["area_tag"];
     }
 
     if (formData["area_folder"]) {
-      data.folder_path = formData["area_folder"];
+      if (type === "Sub-Area") {
+        const parentTag = data.para_tag.substring(
+          0,
+          data.para_tag.lastIndexOf("/"),
+        );
+        const parentFolder = await findParaFile(
+          { tags: [parentTag] },
+          brainOS.app,
+          brainOS.settings,
+          "Sub-area",
+        );
+        if (!parentFolder) return;
+        console.log(parentFolder);
+        // TODO: make sure that it works on both unix and windows
+        data.folder_path = `${parentFolder}/${formData["area_folder"]}`;
+      } else {
+        data.folder_path = formData["area_folder"];
+      }
     }
 
     if (formData["area_index"]) {
@@ -111,13 +139,15 @@
     ) {
       // TODO: add a way to handle area and sub-area creation
       // for sub-area: first look for the parent tag and find the folder name of the parent area
+      console.log(data);
       await createPARAFile(data, brainOS.app, brainOS.settings, type);
+      createAreaForm.reset();
     } else {
       // TODO: display error indicating that information added is not correct
     }
   };
 
-  onDestroy(() => unsubForm());
+  onDestroy(() => unsubAreaSwitch());
 </script>
 
 <div class="flex flex-col gap-3 p-2">
