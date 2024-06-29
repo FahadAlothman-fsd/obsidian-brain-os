@@ -71,10 +71,14 @@
     : $tagsStore;
 </script>
 
-<div class="flex flex-col items-start justify-center gap-2">
+<div class="flex flex-col items-start justify-center gap-2 min-w-full">
+  <label for={$inputField.name}>
+    <span class="text-sm font-medium text-magnum-900">{title}</span>
+  </label>
+
   <div
     use:melt={$root}
-    class="flex min-w-[280px] flex-row flex-wrap gap-2.5 rounded-md bg-white px-3 py-2 text-magnum-700
+    class="flex min-w-full flex-row flex-wrap gap-2.5 rounded-md bg-white px-3 py-2 text-magnum-700
     focus-within:ring focus-within:ring-magnum-400"
   >
     {#each $tags as t}
@@ -103,7 +107,7 @@
     <input
       use:melt={$input}
       type="text"
-      placeholder="Enter tags..."
+      {placeholder}
       class="min-w-[4.5rem] grow basis-0 border-0 text-black outline-none focus:!ring-0 data-[invalid]:text-red-500"
       style="background: transparent; border: none; color: black;"
     />

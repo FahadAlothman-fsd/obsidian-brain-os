@@ -1,18 +1,18 @@
-import { Component, MarkdownRenderer } from "obsidian";
+import { Component, MarkdownRenderer, Notice, TFile, moment } from "obsidian";
 import type { App } from "obsidian";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { createFile } from "./files"
 import { createPeriodicFile } from "./periodic";
-import { createPARAFile } from "./para";
-import type { Tag } from "../types";
+import { createPARAFile, generateHeaderRegExp } from "./para";
+import { LogLevel, type Tag } from "../types";
 
-export function cn(...inputs: ClassValue[]) {
+function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function tagExists(tags: Tag[], tag: string) {
+function tagExists(tags: Tag[], tag: string) {
 
   return tags.some(tagItem => tagItem.value === tag)
 }
@@ -34,8 +34,25 @@ function renderError(
 }
 
 
-export default {
+export function logMessage(message: string, level: LogLevel = LogLevel.info) {
+  new Notice(message, 5000);
+
+  if (level === LogLevel.info) {
+    console.info(message);
+  } else if (level === LogLevel.warn) {
+    console.warn(message);
+  } else if (level === LogLevel.error) {
+    console.error(message);
+    throw Error(message);
+  }
+}
+
+
+export {
   sleep, renderError,
-  createFile, createPeriodicFile, createPARAFile,
+  createFile,
+  createPeriodicFile,
+  createPARAFile, generateHeaderRegExp,
+  cn, tagExists,
 }
 

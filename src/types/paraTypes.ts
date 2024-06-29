@@ -9,14 +9,17 @@ export type PARAType = {
   projects: {
     template: string; // README.md file
     folder: string; // should be path
+    prefix: string; // should be regex
   }
   areas: {
     template: string; // README.md file
     folder: string; // should be path
+    prefix: string; // should be regex
   }
   resources: {
     template: string; // README.md file
     folder: string; // should be path
+    prefix: string; // should be regex
   }
   archives: {
     template: string; // README.md file

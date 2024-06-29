@@ -2,7 +2,7 @@
   import Tabs from "../UI/Tabs.svelte";
   import ProjectsTab from "./projects/index.svelte";
   import AreasTab from "./areas/index.svelte";
-  import ResourcesTab from "./Resources.svelte";
+  import ResourcesTab from "./resources/index.svelte";
   import ArchivesTab from "./Archives.svelte";
   import type { TabsType } from "../../types";
 

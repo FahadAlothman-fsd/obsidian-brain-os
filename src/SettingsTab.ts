@@ -10,15 +10,18 @@ export const DEFAULT_SETTINGS: BrainSettings = {
     usePARANotes: true,
     projects: {
       folder: "01 - Projects",
-      template: "99 - Meta/00 - Templates/PARA/project"
+      template: "99 - Meta/00 - Templates/PARA/project",
+      prefix: "p-"
     },
     areas: {
       folder: "02 - Areas",
-      template: "99 - Meta/00 - Templates/PARA/area"
+      template: "99 - Meta/00 - Templates/PARA/area",
+      prefix: "a-"
     },
     resources: {
       folder: "03 - Resources",
-      template: "99 - Meta/00 - Templates/PARA/resources"
+      template: "99 - Meta/00 - Templates/PARA/resources",
+      prefix: "r-"
     },
     archives: {
       folder: "06 - Archives",
@@ -254,8 +257,9 @@ export class SettingTab extends PluginSettingTab {
 
     const { containerEl } = this
 
-    containerEl.createEl('h1', { text: 'P.A.R.A Notes Settings' });
+    containerEl.createEl('h1', { text: 'P.A.R.A' });
 
+    containerEl.createEl('h2', { text: 'Project Settings' });
     new Setting(containerEl)
       .setName('Projects Folder:')
       .setDesc('Where all your projects will be placed')
@@ -289,6 +293,20 @@ export class SettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Project Prefix')
+      .setDesc('This will be used to differentiate project tags from other tags in your vault')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.projects.prefix)
+          .setValue(this.plugin.settings.para.projects.prefix)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.projects.prefix = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
+    containerEl.createEl('h2', { text: 'Area Settings' });
+    new Setting(containerEl)
       .setName('Area Folder:')
       .setDesc('Where all your areas of interest will be placed')
       .addText((text) => {
@@ -321,6 +339,20 @@ export class SettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Area Prefix')
+      .setDesc('This will be used to differentiate area tags from other tags in your vault')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.areas.prefix)
+          .setValue(this.plugin.settings.para.areas.prefix)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.areas.prefix = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
+    containerEl.createEl('h2', { text: 'Resource Settings' });
+    new Setting(containerEl)
       .setName('Resources Folder:')
       .setDesc('Where all your resources will be placed')
       .addText((text) => {
@@ -335,6 +367,36 @@ export class SettingTab extends PluginSettingTab {
             }, 500))
       }
       );
+
+    new Setting(containerEl)
+      .setName('Resource Template:')
+      .setDesc("The template for the resource's README file \n think of it as the resource type (article, books, videos, etc)")
+      .addText((text) => {
+        new FileSuggest(this.app, text.inputEl);
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.resources.template)
+          .setValue(this.plugin.settings.para.resources.template)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.resources.template = value;
+              await this.plugin.saveSettings();
+            }, 500))
+      }
+      );
+
+    new Setting(containerEl)
+      .setName('Resource Prefix')
+      .setDesc('This will be used to differentiate resource tags from other tags in your vault')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.resources.prefix)
+          .setValue(this.plugin.settings.para.resources.prefix)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.resources.prefix = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
     new Setting(containerEl)
       .setName('Archives Folder:')
       .setDesc('Where all your archives will be placed')

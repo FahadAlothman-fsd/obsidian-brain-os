@@ -7,8 +7,7 @@ import {
   YEARLY,
 } from '../constants';
 
-
-export default {
+const EN = {
 
   [PERIODIC]: 'Periodic Notes',
   [DAILY]: 'Day',
@@ -16,5 +15,8 @@ export default {
   [MONTHLY]: 'Month',
   [QUARTERLY]: 'Quarter',
   [YEARLY]: 'Year',
+}
+export default {
+  EN,
 
 }
