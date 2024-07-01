@@ -5,11 +5,11 @@
   import { required } from "svelte-forms/validators";
   import { app, plugin, tagsStore } from "../../../stores";
   import { tagExists } from "../../../utils";
-  import ComboBox from "../../UI/ComboBox.svelte";
   import Input from "../../UI/Input.svelte";
   import TagInput from "../../UI/TagInput.svelte";
   import type { Tag } from "../../../types";
   import { createPARAFile, type createPARADataType } from "../../../utils/para";
+  import { RESOURCE } from "../../../constants";
 
   const resourceTag = field("resource_tag", "", [required()], {
     validateOnChange: true,
@@ -48,7 +48,7 @@
   });
 
   const handleShouldOpen = (inputValue: string, selected: string) => {
-    // const prjTag = get(projectTag);
+    // const prjTag = get(resourceTag);
     let open = true;
 
     const tag = inputValue.split("/");
@@ -75,7 +75,7 @@
 
   const isLoading = writable<boolean>(false);
 
-  const handleCreateProject = async () => {
+  const handleCreateResource = async () => {
     isLoading.set(true);
     createResourceForm.validate();
     console.log(createResourceForm.summary());
@@ -89,24 +89,24 @@
       entry_file: "",
       folder_path: "",
     };
-    if (formData["project_tag"]) {
-      // TODO: check that the project tag doesn't exist
-      data.para_tag = formData["project_tag"];
+    if (formData["resource_tag"]) {
+      // TODO: check that the resource tag doesn't exist
+      data.para_tag = formData["resource_tag"];
     }
 
-    if (formData["project_folder"]) {
-      // TODO: check that the project folder doesn't exist inside the projects folder
-      data.folder_path = formData["project_folder"];
+    if (formData["resource_folder"]) {
+      // TODO: check that the resource folder doesn't exist inside the projects folder
+      data.folder_path = formData["resource_folder"];
     }
 
-    if (formData["project_index"]) {
+    if (formData["resource_index"]) {
       // TODO: check that the index file is in the correct format for a name of a file
-      data.entry_file = formData["project_index"];
+      data.entry_file = formData["resource_index"];
     }
 
     if (
-      formData["project_related_areas"] &&
-      formData["project_related_areas"].length > 0
+      formData["resource_related_areas"] &&
+      formData["resource_related_areas"].length > 0
     ) {
       // TODO: check that the main area is not tagged here
     }
@@ -117,7 +117,7 @@
       data.folder_path !== ""
     ) {
       console.log(data);
-      await createPARAFile(data, brainOS.app, brainOS.settings, "Project");
+      await createPARAFile(data, brainOS.app, brainOS.settings, RESOURCE);
     } else {
       // TODO: display error indicating that information added is not correct
     }
@@ -126,12 +126,11 @@
 </script>
 
 <div class="flex flex-col gap-3 p-2">
-  <ComboBox
+  <Input
     inputField={resourceTag}
     title={"Tag"}
     placeholder={"#article..."}
     error={$createResourceForm.hasError("resource_tag.required")}
-    shouldOpen={handleShouldOpen}
   />
   <Input
     title={"Folder"}
@@ -141,7 +140,7 @@
   />
   <Input
     title={"Entry"}
-    placeholder={"project.README.md..."}
+    placeholder={"resource.README.md..."}
     inputField={resourceIndex}
     error={$createResourceForm.hasError("resource_index.required")}
   />
@@ -155,7 +154,7 @@
   <button
     type="button"
     disabled={!$createResourceForm.valid || !$createResourceForm.dirty}
-    on:click={handleCreateProject}
+    on:click={handleCreateResource}
     class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-indigo-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
   >
     {#if !$isLoading}

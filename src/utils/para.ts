@@ -1,16 +1,25 @@
 import { TFolder, type App, TFile, TAbstractFile } from "obsidian";
 import type { BrainSettings } from "../types";
 import { createFile } from "./files";
-import { PROJECT, AREA, SUB_AREA } from "../constants";
+import { PROJECT, AREA, SUB_AREA, RESOURCE } from "../constants";
 
 export type createPARADataType = {
   entry_file: string;
   para_tag: string;
   folder_path: string;
 }
-export type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA
+export type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA | typeof RESOURCE
 export type findPARAFileConditionsType = {
   tags: string[];
+}
+
+export function generateHeaderRegExp(header: string) {
+  const formattedHeader = /^#+/.test(header.trim())
+    ? header.trim()
+    : `# ${header.trim()}`;
+  const reg = new RegExp(`(${formattedHeader}[^\n]*)([\\s\\S]*?)(?=\\n##|$)`);
+
+  return reg;
 }
 
 export const findParaFile = async (
@@ -23,22 +32,28 @@ export const findParaFile = async (
     // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
     return;
   }
-  let dir: string
+  let dir: string = ""
   // Setting root dir for searching
   switch (type) {
 
-    case "Project": {
+    case PROJECT: {
 
       dir = settings.para.projects.folder
       break;
     }
-    case "Sub-area":
-    case "Area": {
+    case SUB_AREA:
+    case AREA: {
 
       dir = settings.para.areas.folder
       break;
     }
+    case RESOURCE: {
+      dir = settings.para.resources.folder
+
+    }
   }
+
+  if (dir === "") return;
 
   const folder = app.vault.getAbstractFileByPath(dir);
 
@@ -138,7 +153,7 @@ function hasCommonPrefix(tags1: string[], tags2: string[]) {
 
 
 
-export const createPARAFile = async (values: createPARADataType, app: App, settings: BrainSettings, type: "Project" | "Area" | "Sub-Area") => {
+export const createPARAFile = async (values: createPARADataType, app: App, settings: BrainSettings, type: PARATypes) => {
   if (!app || !settings) {
     // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
     return;
@@ -151,7 +166,7 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
   let tag = '';
   let INDEX = '';
   let path = '';
-  if (type === "Area" || type === "Sub-Area") {
+  if (type === AREA || type === SUB_AREA) {
 
     // TODO: for the sub-area, you should do the following:
     // - look if the tag before the sub-area's tag exists 
@@ -160,9 +175,12 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
     path = settings.para.areas.folder
     templateFile = settings.para.areas.template
 
-  } else {
+  } else if (type === PROJECT) {
     path = settings.para.projects.folder
     templateFile = settings.para.projects.template
+  } else if (type === RESOURCE) {
+    path = settings.para.resources.folder
+    templateFile = settings.para.resources.template
   }
 
   templateFile += ".md"

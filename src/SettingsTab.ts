@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: BrainSettings = {
     usePeriodicNotes: true,
     periodicFolder: "00 - Periodic",
     daily: {
+      projectListHeader: "Project List",
       template: "99 - Meta/00 - Templates/Periodic/daily",
       habitHeader: 'Habit',
       dailyRecordHeader: 'Daily Record',
@@ -156,9 +157,10 @@ export class SettingTab extends PluginSettingTab {
           )
       );
 
+
     new Setting(containerEl)
-      .setName('Project List Header:')
-      .setDesc('Where the Project List is in a daily note')
+      .setName('Daily Record Header:')
+      .setDesc('the name of the daily record section')
       .addText((text) =>
         text
           .setPlaceholder(DEFAULT_SETTINGS.periodic.daily.dailyRecordHeader)
@@ -166,6 +168,20 @@ export class SettingTab extends PluginSettingTab {
           .onChange(
             debounce(async (value) => {
               this.plugin.settings.periodic.daily.dailyRecordHeader = value;
+              await this.plugin.saveSettings();
+            }, 500)
+          )
+      );
+    new Setting(containerEl)
+      .setName('Project List Header:')
+      .setDesc('Where the Project List is in a daily note')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.periodic.daily.projectListHeader)
+          .setValue(this.plugin.settings.periodic.daily.projectListHeader)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.periodic.daily.projectListHeader = value;
               await this.plugin.saveSettings();
             }, 500)
           )

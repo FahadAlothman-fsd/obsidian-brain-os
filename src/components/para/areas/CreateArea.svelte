@@ -12,6 +12,7 @@
     type createPARADataType,
   } from "../../../utils/para";
   import { onDestroy } from "svelte";
+  import { SUB_AREA, AREA } from "../../../constants";
 
   const areaSwitch = field("area_switch", false);
   const areaTag = field("area_tag", "", [required()], {
@@ -89,9 +90,9 @@
   const handleCreateArea = async () => {
     createAreaForm.validate();
     // TODO: have a type in the para types file
-    let type: "Project" | "Area" | "Sub-Area" = get(areaSwitch)
-      ? "Sub-Area"
-      : "Area";
+    let type: typeof AREA | typeof SUB_AREA = get(areaSwitch).value
+      ? SUB_AREA
+      : AREA;
     console.log(createAreaForm.summary());
     const formData = createAreaForm.summary();
     const brainOS = get(plugin);
@@ -108,7 +109,7 @@
     }
 
     if (formData["area_folder"]) {
-      if (type === "Sub-Area") {
+      if (type === SUB_AREA) {
         const parentTag = data.para_tag.substring(
           0,
           data.para_tag.lastIndexOf("/"),
@@ -117,7 +118,7 @@
           { tags: [parentTag] },
           brainOS.app,
           brainOS.settings,
-          "Sub-area",
+          type,
         );
         if (!parentFolder) return;
         console.log(parentFolder);

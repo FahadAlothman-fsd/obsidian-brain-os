@@ -7,13 +7,8 @@
   import { plugin } from "../../stores";
   import { DAILY, WEEKLY } from "../../constants";
   import {
-    CalendarDate,
-    CalendarDateTime,
-    ZonedDateTime,
-    endOfWeek,
     getLocalTimeZone,
-    now,
-    parseDateTime,
+    today,
     startOfWeek,
     type DateValue,
   } from "@internationalized/date";
@@ -30,6 +25,8 @@
     helpers: { isDateDisabled, isDateUnavailable },
   } = createCalendar({
     locale: window.localStorage.getItem("language") || "en",
+    // @ts-ignore
+    // defaultValue: today(getLocalTimeZone()),
   });
 
   $: if ($value) {
@@ -41,7 +38,7 @@
         DAILY,
         brainOS.settings.periodic.periodicFolder,
         brainOS.settings.periodic.daily.template,
-        brainOS.app
+        brainOS.app,
       );
     }
   }
@@ -55,7 +52,7 @@
         WEEKLY,
         brainOS.settings.periodic.periodicFolder,
         brainOS.settings.periodic.weekly.template,
-        brainOS.app
+        brainOS.app,
       );
     }
   };
@@ -111,15 +108,17 @@
                 >
                   <div
                     role="button"
-                    on:click={async (e) => {
+                    on:click={async (_) => {
                       await handleCreateWeekly(
-                        startOfWeek(weekDates[0], window.moment().locale())
+                        // @ts-ignore
+                        startOfWeek(weekDates[0], window.moment().locale()),
                       );
                     }}
                     class="flex h-6 w-6 cursor-pointer select-none items-center justify-center rounded-lg p-4 hover:bg-magnum-300 focus:ring focus:ring-magnum-400"
                   >
                     {getISOWeekNumber(
-                      startOfWeek(weekDates[0], moment.locale())
+                      // @ts-ignore
+                      startOfWeek(weekDates[0], moment.locale()),
                     )}
                   </div>
                 </td>

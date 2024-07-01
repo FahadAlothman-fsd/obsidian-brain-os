@@ -12,6 +12,15 @@ export default defineConfig({
     }
   )],
   extractors: [extractorSvelte()],
+  shortcuts: {
+    "btn-data-disabled": "pointer-events-none rounded-lg p-1 opacity-40",
+    "cell-data-disabled": "pointer-events-none opacity-40",
+    "cell-data-unavailable": "pointer-events-none text-red-400 line-through",
+    "cell-data-selected": "bg-magnum-400 text-neutral-950",
+    "cell-data-outside-visible-months": "pointer-events-none cursor-default opacity-40 hover:bg-transparent",
+    "cell-data-outside-month": "pointer-events-none cursor-default opacity-0 hover:bg-transparent",
+
+  },
   theme: {
     colors: {
       'magnum-50': '#fff9ed',
