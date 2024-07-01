@@ -2,8 +2,10 @@ import { writable, derived } from "svelte/store";
 import BrainOS from '../main'
 import type { App, MetadataCache } from 'obsidian';
 import type { Tag } from "../types";
+import { DataviewApi } from 'obsidian-dataview';
 
 const plugin = writable<BrainOS | undefined>();
+const dataviewStore = writable<DataviewApi | undefined>()
 
 const app = derived(plugin, ($plugin) => $plugin?.app ?? undefined)
 
@@ -34,4 +36,7 @@ const tags = (() => {
 })()
 
 
-export { plugin, app, tags }
+export {
+  plugin, app, tags,
+  dataviewStore,
+}

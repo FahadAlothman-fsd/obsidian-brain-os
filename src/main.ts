@@ -20,13 +20,25 @@ import { DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
 import { logMessage, renderError } from "./utils";
 import { I18N_MAP } from "./i18n";
 import { ERROR_MESSAGE } from "./constants";
+import { dataviewStore } from "./stores/pluginStore";
+import { Project, Area, Resource, Archive } from "./para";
+import { Bullet, Task, Date } from "./periodic";
 
 
 
 export default class BrainOS extends Plugin {
   settings!: BrainSettings;
+  dataview: DataviewApi
   locale: string
-
+  codeBlockViews!: Record<string, any>;
+  project!: Project;
+  area!: Area;
+  resource!: Resource;
+  archive!: Archive;
+  task!: Task;
+  file!: File;
+  bullet!: Bullet;
+  date!: Date;
 
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
@@ -39,20 +51,20 @@ export default class BrainOS extends Plugin {
       return;
     }
 
-    // const dataviewApi = getAPI(app) as DataviewApi;
-    //
-    // if (!dataviewApi) {
-    //   logMessage(
-    //     I18N_MAP[this.locale][`${ERROR_MESSAGE}FAILED_DATAVIEW_API`],
-    //     LogLevel.error
-    //   );
-    //   return;
-    // }
+    const dataviewApi = getAPI(app) as DataviewApi;
+
+    if (!dataviewApi) {
+      logMessage(
+        I18N_MAP[this.locale][`${ERROR_MESSAGE}FAILED_DATAVIEW_API`],
+        LogLevel.error
+      );
+      return;
+    }
 
     this.app = app;
 
-    // dataviewStore.set(dataviewApi)
-    // this.dataview = dataviewApi;
+    dataviewStore.set(dataviewApi)
+    this.dataview = dataviewApi;
   }
   async loadSettings() {
     const data = await this.loadData()
@@ -64,7 +76,12 @@ export default class BrainOS extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
-    // await this.initCodeBlockViews()
+    this.loadHelpers()
+    await this.initCodeBlockViews()
+    await this.initCodeBlockViews()
+    this.loadGlobalHelpers()
+    this.setupCodeBlocks()
+
   }
 
   async onload() {
@@ -76,9 +93,12 @@ export default class BrainOS extends Plugin {
     // this.plugins.getPlugin("nldates-obsidian")
     // console.log(this.app.plugins.enabledPlugin.has('para-periodic'))
     await this.setupBrainOSViews()
+    this.loadHelpers()
+    await this.initCodeBlockViews()
 
-    // this.loadHelpers()
-    // this.setupCodeBlocks()
+    this.loadGlobalHelpers()
+
+    this.setupCodeBlocks()
 
     this.addSettingTab(new SettingTab(this.app, this));
   }
@@ -114,118 +134,116 @@ export default class BrainOS extends Plugin {
 
   }
 
+  loadHelpers() {
+    this.task = new Task(this.app, this.settings, this.dataview, this.locale);
+    this.file = new File(this.app, this.settings, this.dataview, this.locale);
+    this.date = new Date(this.app, this.settings, this.file, this.locale);
+    this.bullet = new Bullet(this.app, this.settings, this.dataview, this.locale);
 
-  // loadHelpers() {
-  //   this.task = new Task(this.app, this.settings, this.dataview, this.locale);
-  //   this.file = new File(this.app, this.settings, this.dataview, this.locale);
-  //   this.date = new Date(this.app, this.settings, this.file, this.locale);
-  //   this.bullet = new Bullet(this.app, this.settings, this.dataview, this.locale);
-  //
-  //   this.project = new Project(
-  //     this.settings.para.projects.folder,
-  //     this.app,
-  //     this.settings,
-  //     this.file,
-  //     this.locale
-  //   );
-  //   this.area = new Area(
-  //     this.settings.para.areas.folder,
-  //     this.app,
-  //     this.settings,
-  //     this.file,
-  //     this.locale
-  //   );
-  //   this.resource = new Resource(
-  //     this.settings.para.resources.folder,
-  //     this.app,
-  //     this.settings,
-  //     this.file,
-  //     this.locale
-  //   );
-  //   this.archive = new Archive(
-  //     this.settings.para.archives.folder,
-  //     this.app,
-  //     this.settings,
-  //     this.file,
-  //     this.locale
-  //   );
-  // }
+    this.project = new Project(
+      this.settings.para.projects.folder,
+      this.app,
+      this.settings,
+      this.file,
+      this.locale
+    );
+    this.area = new Area(
+      this.settings.para.areas.folder,
+      this.app,
+      this.settings,
+      this.file,
+      this.locale
+    );
+    this.resource = new Resource(
+      this.settings.para.resources.folder,
+      this.app,
+      this.settings,
+      this.file,
+      this.locale
+    );
+    this.archive = new Archive(
+      this.settings.para.archives.folder,
+      this.app,
+      this.settings,
+      this.file,
+      this.locale
+    );
+  }
 
-  // loadGlobalHelpers() {
-  //   const helpers = {
-  //     Project: this.project,
-  //     Area: this.area,
-  //     Resource: this.resource,
-  //     Archive: this.archive,
-  //     Task: this.task,
-  //     File: this.file,
-  //     Bullet: this.bullet,
-  //     Date: this.date,
-  //   };
-  //
-  //   // TODO: add this to the global namespace
-  //   (window as any).PeriodicPARA = helpers;
-  //   (window as any).LifeOS = helpers;
-  // }
+  loadGlobalHelpers() {
+    const helpers = {
+      Project: this.project,
+      Area: this.area,
+      Resource: this.resource,
+      Archive: this.archive,
+      Task: this.task,
+      File: this.file,
+      Bullet: this.bullet,
+      Date: this.date,
+    };
 
-  // setupCodeBlocks() {
-  //
-  //   const handler = (
-  //     source: keyof typeof this.codeBlockViews,
-  //     el: HTMLElement,
-  //     ctx: MarkdownPostProcessorContext
-  //   ) => {
-  //     const view = source.trim() as keyof typeof this.codeBlockViews;
-  //
-  //     if (!view) {
-  //       return renderError(
-  //         this.app,
-  //         I18N_MAP[this.locale][`${ERROR_MESSAGE}NO_VIEW_PROVIDED`],
-  //         el.createEl('div'),
-  //         ctx.sourcePath
-  //       );
-  //     }
-  //
-  //     if (
-  //       !Object.keys(this.codeBlockViews).includes(view)
-  //     ) {
-  //       return renderError(
-  //         this.app,
-  //         `${I18N_MAP[this.locale][`${ERROR_MESSAGE}NO_VIEW_EXISTED`]}: ${view}`,
-  //         el.createEl('div'),
-  //         ctx.sourcePath
-  //       );
-  //     }
-  //
-  //     const callback = this.codeBlockViews[view];
-  //
-  //     return callback(view, el, ctx);
-  //   };
-  //   this.registerMarkdownCodeBlockProcessor('BrainOS', handler);
-  // }
+    // TODO: add this to the global namespace
+    (window as any).BrainOS = helpers;
+  }
 
-  // async initCodeBlockViews() {
-  //   this.codeBlockViews = {
-  //     // views by time -> time context -> periodic notes
-  //     ProjectListByTime: this.project.listByTime,
-  //     AreaListByTime: this.area.listByTime,
-  //     TaskRecordListByTime: this.task.recordListByTime,
-  //     TaskDoneListByTime: this.task.doneListByTime,
-  //     // views by tag -> topic context -> para
-  //     TaskListByTag: this.task.listByTag,
-  //     BulletListByTag: this.bullet.listByTag,
-  //     FileListByTag: this.file.listByTag,
-  //     ProjectListByTag: this.project.listByTag,
-  //     AreaListByTag: this.area.listByTag,
-  //     ResourceListByTag: this.resource.listByTag,
-  //     ArchiveListByTag: this.archive.listByTag,
-  //     // views by folder
-  //     ProjectListByFolder: this.project.listByFolder,
-  //     AreaListByFolder: this.area.listByFolder,
-  //     ResourceListByFolder: this.resource.listByFolder,
-  //     ArchiveListByFolder: this.archive.listByFolder,
-  //   };
-  // }
+  setupCodeBlocks() {
+
+    const handler = (
+      source: keyof typeof this.codeBlockViews,
+      el: HTMLElement,
+      ctx: MarkdownPostProcessorContext
+    ) => {
+      const view = source.trim() as keyof typeof this.codeBlockViews;
+
+      if (!view) {
+        return renderError(
+          this.app,
+          I18N_MAP[this.locale][`${ERROR_MESSAGE}NO_VIEW_PROVIDED`],
+          el.createEl('div'),
+          ctx.sourcePath
+        );
+      }
+
+      if (
+        !Object.keys(this.codeBlockViews).includes(view)
+      ) {
+        return renderError(
+          this.app,
+          `${I18N_MAP[this.locale][`${ERROR_MESSAGE}NO_VIEW_EXISTED`]}: ${view}`,
+          el.createEl('div'),
+          ctx.sourcePath
+        );
+      }
+
+      const callback = this.codeBlockViews[view];
+
+      return callback(view, el, ctx);
+    };
+    this.registerMarkdownCodeBlockProcessor('BrainOS', handler);
+  }
+
+  async initCodeBlockViews() {
+    this.codeBlockViews = {
+      // views by time -> time context -> periodic notes
+      ProjectListByTime: this.project.listByTime,
+      AreaListByTime: this.area.listByTime,
+      TaskRecordListByTime: this.task.recordListByTime,
+      TaskDoneListByTime: this.task.doneListByTime,
+      // views by tag -> topic context -> para
+      TaskListByTag: this.task.listByTag,
+      BulletListByTag: this.bullet.listByTag,
+      FileListByTag: this.file.listByTag,
+      ProjectListByTag: this.project.listByTag,
+      AreaListByTag: this.area.listByTag,
+      ResourceListByTag: this.resource.listByTag,
+      ArchiveListByTag: this.archive.listByTag,
+      // views by folder
+      ProjectListByFolder: this.project.listByFolder,
+      AreaListByFolder: this.area.listByFolder,
+      ResourceListByFolder: this.resource.listByFolder,
+      ArchiveListByFolder: this.archive.listByFolder,
+    };
+  }
 
   // LEAF VIEW 
   async activatePeriodicView() {

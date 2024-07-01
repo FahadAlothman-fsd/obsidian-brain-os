@@ -22,6 +22,7 @@ export type PeriodicType = {
   usePeriodicNotes: boolean;
   periodicFolder: string // should be path
   daily: {
+    projectListHeader: string
     template: string; // should be path
     habitHeader: string;
     dailyRecordHeader: string;
