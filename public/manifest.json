@@ -4,7 +4,7 @@
 	"description": "a plugin that combines the PARA, Periodic, Zettelkasten organiziation methods for obsidian",
 	"author": "Fahad Alothman",
 	"authorUrl": "https://github.com/FahadAlothman-fsd",
-	"version": "1.0.0",
+	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
 	"isDesktopOnly": false
 }
