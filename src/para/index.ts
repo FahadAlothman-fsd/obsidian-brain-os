@@ -3,7 +3,7 @@ import { Area } from "./Area";
 import { Resource } from "./Resource";
 import { Archive } from "./Archive";
 import { PROJECT, AREA, SUB_AREA, RESOURCE } from "../constants";
-import { Tag } from "../utils/tag";
+// import { Tag } from "../utils/tag";
 import type { BrainSettings } from "../types";
 
 
@@ -20,19 +20,19 @@ function getParaType(settings: BrainSettings, tag: string): PARATypes | undefine
   return prefixes.find((value) => tag.startsWith(value.prefix))?.type
 }
 
-class PARATag extends Tag {
-  ParaType: PARATypes
-  constructor(name: string, type: PARATypes) {
-    super(name)
-    this.ParaType = type
-  }
-
-}
+// class PARATag extends Tag {
+//   ParaType: PARATypes
+//   constructor(name: string, type: PARATypes) {
+//     super(name)
+//     this.ParaType = type
+//   }
+//
+// }
 
 
 
 export {
-  PARATag,
+  // PARATag,
   getParaType,
   Project,
   Area,
