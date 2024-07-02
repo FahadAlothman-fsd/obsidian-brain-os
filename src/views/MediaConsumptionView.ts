@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, type WorkspaceLeaf } from "obsidian";
 import MediaConsumption from '../components/media/index.svelte'
 
 export const MEDIA_CONSUMPTION_VIEW = "media-consumption-view";
