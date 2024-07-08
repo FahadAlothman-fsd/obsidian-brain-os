@@ -26,7 +26,13 @@ export class Item {
   }
 
   snapshot(dir = this.dir) {
-    return this.file.list(dir);
+    return this.file.list(dir).join('\n');
+  }
+
+  getAllPARAFiles = async (dir = this.dir) => {
+
+    const files = this.file.getAllFilesInFolder(dir)
+    return files ?? []
   }
 
   listByFolder = async (
@@ -35,7 +41,7 @@ export class Item {
     ctx: MarkdownPostProcessorContext
   ) => {
     const div = el.createEl('div');
-    const markdown = this.file.list(this.dir);
+    const markdown = this.file.list(this.dir).join('\n');
     const component = new Markdown(div);
 
     MarkdownRenderer.render(
@@ -57,7 +63,7 @@ export class Item {
     const filepath = ctx.sourcePath;
     const tags = this.file.tags(filepath);
     const div = el.createEl('div');
-    const markdown = this.file.list(this.dir, { tags });
+    const markdown = this.file.list(this.dir, { tags }).join('\n');
     const component = new Markdown(div);
 
     MarkdownRenderer.render(

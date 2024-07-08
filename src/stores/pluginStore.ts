@@ -10,6 +10,9 @@ const dataviewStore = writable<DataviewApi | undefined>()
 const app = derived(plugin, ($plugin) => $plugin?.app ?? undefined)
 
 
+// PARA
+
+
 const tags = (() => {
 
   const { subscribe, set } = writable<Tag[]>([])
