@@ -3,7 +3,7 @@ import type { App } from "obsidian";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { createFile } from "./files"
+import { createFile, findTemplateFiles } from "./files"
 import { createPeriodicFile } from "./periodic";
 import { createPARAFile, generateHeaderRegExp } from "./para";
 import { LogLevel, type Tag } from "../types";
@@ -50,7 +50,7 @@ export function logMessage(message: string, level: LogLevel = LogLevel.info) {
 
 export {
   sleep, renderError,
-  createFile,
+  createFile, findTemplateFiles,
   createPeriodicFile,
   createPARAFile, generateHeaderRegExp,
   cn, tagExists,

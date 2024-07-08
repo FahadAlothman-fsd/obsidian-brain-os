@@ -2,11 +2,14 @@ import { TFolder, type App, TFile, TAbstractFile } from "obsidian";
 import type { BrainSettings } from "../types";
 import { createFile } from "./files";
 import { PROJECT, AREA, SUB_AREA, RESOURCE } from "../constants";
+import type { templateType } from "../stores";
 
 export type createPARADataType = {
   entry_file: string;
   para_tag: string;
   folder_path: string;
+  related_areas?: string[];
+  related_templates?: templateType[]
 }
 export type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA | typeof RESOURCE
 export type findPARAFileConditionsType = {
@@ -14,6 +17,7 @@ export type findPARAFileConditionsType = {
 }
 
 export function generateHeaderRegExp(header: string) {
+  console.log(header)
   const formattedHeader = /^#+/.test(header.trim())
     ? header.trim()
     : `# ${header.trim()}`;
@@ -194,11 +198,38 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
   folder = `${path}/${key}`;
   file = `${folder}/${INDEX}`;
 
+  let related_templates_section
+
+  if (values.related_templates) {
+
+    const templates = values.related_templates.map((template) => {
+
+      const tempFile = app.vault.getFileByPath(template.path)
+      console.log(tempFile)
+      if (tempFile instanceof TFile) {
+        const link = app.metadataCache.fileToLinktext(
+          tempFile,
+          tempFile?.path
+        );
+        console.log(`[[${link}|${tempFile.name}]]`)
+        return `[[${link}|${tempFile.name}]]`;
+      }
+    })
+      .filter((link) => !!link)
+      .map((link) => `- ${link}`)
+
+    if (templates.length > 0) {
+
+      related_templates_section = [`# ${settings.otherTemplatesHeader} \n`, ...templates].join("\n")
+    }
+  }
+
   await createFile(app, {
     locale,
     templateFile,
     folder,
     file,
     tag,
+    append: related_templates_section
   });
 };

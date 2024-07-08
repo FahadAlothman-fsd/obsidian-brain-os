@@ -1,13 +1,86 @@
-import type { App, TAbstractFile, TagCache } from "obsidian";
+import { App, TAbstractFile, type TagCache, TFolder } from "obsidian";
 import { Component, MarkdownRenderer, Notice, TFile, moment } from "obsidian";
 // import { CST, parseDocument, type Node } from "yaml";
 import { I18N_MAP } from "../i18n";
 import { ERROR_MESSAGE } from "../constants";
+import type { BrainSettings } from "../types";
 // import { Tag, Replacement } from "./tag";
 
 export function trimFile(file: TFile): string {
-	if (!file) return "";
-	return file.extension === "md" ? file.path.slice(0, -3) : file.path;
+  if (!file) return "";
+  return file.extension === "md" ? file.path.slice(0, -3) : file.path;
+}
+
+
+
+
+
+export const findTemplateFiles = async (
+  app: App,
+  dir: string,
+) => {
+
+  const locale = window.moment().locale()
+
+  if (!app) {
+    // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
+    new Notice(
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`],
+    );
+    return [];
+  }
+  // Setting root dir for searching
+
+  if (dir === "") return [];
+
+  const folder = app.vault.getAbstractFileByPath(dir);
+
+  console.log(folder)
+
+  if (folder instanceof TFolder) {
+
+    // DFS for all areas and sub-areas in the areas root folder
+    const stack = [folder]
+    const visited = new Set<TAbstractFile>()
+    const result: TAbstractFile[] = []
+
+    while (stack.length > 0) {
+      const vertex = stack.pop()
+
+      if (vertex !== undefined) {
+        if (!visited.has(vertex)) {
+          visited.add(vertex)
+
+
+          if (vertex.children.length > 0) {
+            const TemplateFile = vertex.children.sort().filter((file) => {
+              if (file instanceof TFile) {
+                return true;
+              }
+            });
+            if (TemplateFile) {
+              result.push(...TemplateFile)
+            }
+
+          }
+          for (const neighbor of vertex.children.sort().filter((file) => file instanceof TFolder)) {
+            stack.push(neighbor as TFolder);
+          }
+        }
+      }
+    }
+
+    console.log(result)
+    if (result.length === 0) {
+      new Notice(
+        I18N_MAP[locale][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`],
+      );
+    }
+    return result
+
+
+
+  }
 }
 
 // export class File {
@@ -110,56 +183,63 @@ export function trimFile(file: TFile): string {
 // }
 
 export async function createFile(
-	app: App,
-	options: {
-		locale: string;
-		templateFile: string;
-		folder: string;
-		file: string;
-		tag?: string;
-	},
+  app: App,
+  options: {
+    locale: string;
+    templateFile: string;
+    folder: string;
+    file: string;
+    tag?: string;
+    append?: string;
+  },
 ) {
-	if (!app) {
-		return;
-	}
+  if (!app) {
+    return;
+  }
 
-	const { templateFile, folder, file, tag, locale } = options;
-	const templateTFile = app.vault.getAbstractFileByPath(templateFile);
+  const { templateFile, folder, file, tag, locale } = options;
+  const templateTFile = app.vault.getAbstractFileByPath(templateFile);
 
-	if (!templateTFile) {
-		return new Notice(
-			I18N_MAP[locale][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`] + templateFile,
-		);
-	}
+  if (!templateTFile) {
+    return new Notice(
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`] + templateFile,
+    );
+  }
 
-	if (templateTFile instanceof TFile) {
-		const templateContent = await app.vault.cachedRead(templateTFile);
+  if (templateTFile instanceof TFile) {
+    let templateContent = await app.vault.cachedRead(templateTFile);
 
-		if (!folder || !file) {
-			return;
-		}
 
-		const tFile = app.vault.getAbstractFileByPath(file);
+    if (options.append) {
+      console.log(options.append)
+      templateContent = templateContent + "\n\n---\n" + options.append
+    }
+    if (!folder || !file) {
+      return;
+    }
 
-		if (tFile && tFile instanceof TFile) {
-			return await app.workspace.getLeaf().openFile(tFile);
-		}
+    const tFile = app.vault.getAbstractFileByPath(file);
 
-		if (!app.vault.getAbstractFileByPath(folder)) {
-			app.vault.createFolder(folder);
-		}
+    if (tFile && tFile instanceof TFile) {
+      return await app.workspace.getLeaf().openFile(tFile);
+    }
 
-		const fileCreated = await app.vault.create(file, templateContent);
+    if (!app.vault.getAbstractFileByPath(folder)) {
+      app.vault.createFolder(folder);
+    }
 
-		await app.fileManager.processFrontMatter(fileCreated, (frontMatter) => {
-			if (!tag) {
-				return;
-			}
+    const fileCreated = await app.vault.create(file, templateContent);
 
-			frontMatter.tags = frontMatter.tags || [];
-			frontMatter.tags.push(tag.replace(/^#/, ""));
-		});
-		// await sleep(30); // 等待被索引，否则读取不到 frontmatter：this.app.metadataCache.getFileCache(file)
-		await app.workspace.getLeaf().openFile(fileCreated);
-	}
+    await app.fileManager.processFrontMatter(fileCreated, (frontMatter) => {
+      if (!tag) {
+        return;
+      }
+
+      frontMatter.tags = frontMatter.tags || [];
+      frontMatter.tags.push(tag.replace(/^#/, ""));
+    });
+
+    // await sleep(30); // 等待被索引，否则读取不到 frontmatter：this.app.metadataCache.getFileCache(file)
+    await app.workspace.getLeaf().openFile(fileCreated);
+  }
 }

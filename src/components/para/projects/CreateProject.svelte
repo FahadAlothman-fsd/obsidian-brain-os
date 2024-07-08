@@ -8,6 +8,7 @@
   import ComboBox from "../../UI/ComboBox.svelte";
   import Input from "../../UI/Input.svelte";
   import TagInput from "../../UI/TagInput.svelte";
+  import TemplateInput from "../../UI/TemplateInput.svelte";
   import type { Tag } from "../../../types";
   import { createPARAFile, type createPARADataType } from "../../../utils/para";
   import { PROJECT } from "../../../constants";
@@ -21,9 +22,30 @@
   const projectIndex = field("project_index", "", [required()], {
     validateOnChange: true,
   });
-  const projectRelatedAreas = field<Tag[]>("project_related_areas", [], [], {
-    validateOnChange: true,
-  });
+  function isMainArea() {
+    return (value: Tag[]) => {
+      console.log(
+        value.find((d: Tag) => {
+          console.log(d.value === $projectTag.value.split("/")[0]);
+          return d.value === $projectTag.value.split("/")[0];
+        }),
+      );
+      return {
+        valid: !value.find(
+          (d: Tag) => d.value === $projectTag.value.split("/")[0],
+        ),
+        name: "is_main_area",
+      };
+    };
+  }
+  const projectRelatedAreas = field<Tag[]>(
+    "project_related_areas",
+    [],
+    [isMainArea()],
+    {
+      validateOnChange: true,
+    },
+  );
   const projectTemplates = field("project_templates", [], [], {
     validateOnChange: true,
   });
@@ -34,6 +56,7 @@
     projectFolder,
     projectIndex,
     projectRelatedAreas,
+    projectTemplates,
   );
 
   projectTag.subscribe((prjTag) => {
@@ -88,10 +111,15 @@
     // TODO: display error here indicating that the brainOS wasn't added correctly
     if (!brainOS) return;
 
+    console.log($createProjectForm.valid);
+    if (!$createProjectForm.valid) return;
+
     let data: createPARADataType = {
       para_tag: "",
       entry_file: "",
       folder_path: "",
+      related_areas: [],
+      related_templates: [],
     };
     if (formData["project_tag"]) {
       // TODO: check that the project tag doesn't exist
@@ -113,6 +141,16 @@
       formData["project_related_areas"].length > 0
     ) {
       // TODO: check that the main area is not tagged here
+      data.related_areas = formData["project_related_areas"].map(
+        (value: { value: string; count: number }) => value.value,
+      );
+    }
+
+    if (
+      formData["project_templates"] &&
+      formData["project_templates"].length > 0
+    ) {
+      data.related_templates = formData["project_templates"];
     }
 
     if (
@@ -122,6 +160,7 @@
     ) {
       console.log(data);
       await createPARAFile(data, brainOS.app, brainOS.settings, PROJECT);
+      createProjectForm.reset();
     } else {
       // TODO: display error indicating that information added is not correct
     }
@@ -157,7 +196,7 @@
     error={$createProjectForm.hasError("project_related_areas.required")}
   />
 
-  <TagInput
+  <TemplateInput
     title={"Project Templates"}
     placeholder={"live-session.md"}
     inputField={projectTemplates}

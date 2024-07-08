@@ -14,7 +14,7 @@ import {
   IntegratorView, INTEGRATOR_VIEW
 } from "./views";
 import { File } from "./files";
-import { plugin, tagsStore } from './stores';
+import { plugin, tagsStore, PARAStore, templateStore } from './stores';
 import { LogLevel, type BrainSettings } from "./types";
 import { DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
 import { logMessage, renderError } from "./utils";
@@ -76,6 +76,7 @@ export default class BrainOS extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings);
+    this.loadStores()
     this.loadHelpers()
     await this.initCodeBlockViews()
     await this.initCodeBlockViews()
@@ -85,26 +86,35 @@ export default class BrainOS extends Plugin {
   }
 
   async onload() {
-    await this.loadSettings();
+    this.app.workspace.onLayoutReady(async () => {
 
-    plugin.set(this);
-    tagsStore.reload();
+      await this.loadSettings();
+      this.loadStores()
 
-    // this.plugins.getPlugin("nldates-obsidian")
-    // console.log(this.app.plugins.enabledPlugin.has('para-periodic'))
-    await this.setupBrainOSViews()
-    this.loadHelpers()
-    await this.initCodeBlockViews()
 
-    this.loadGlobalHelpers()
 
-    this.setupCodeBlocks()
+      // this.plugins.getPlugin("nldates-obsidian")
+      // console.log(this.app.plugins.enabledPlugin.has('para-periodic'))
+      await this.setupBrainOSViews()
+      this.loadHelpers()
+      await this.initCodeBlockViews()
 
-    this.addSettingTab(new SettingTab(this.app, this));
+      this.loadGlobalHelpers()
+
+      this.setupCodeBlocks()
+
+      this.addSettingTab(new SettingTab(this.app, this));
+
+    })
   }
 
   onunload() {
     console.log("unloading plugin");
+  }
+  loadStores() {
+    plugin.set(this);
+    tagsStore.reload();
+    templateStore.reload()
   }
 
   async setupBrainOSViews() {
@@ -168,6 +178,13 @@ export default class BrainOS extends Plugin {
       this.file,
       this.locale
     );
+
+    PARAStore.set({
+      project: this.project,
+      area: this.area,
+      resources: this.resource,
+      archives: this.archive
+    })
   }
 
   loadGlobalHelpers() {
@@ -249,7 +266,7 @@ export default class BrainOS extends Plugin {
   async activatePeriodicView() {
     this.app.workspace.detachLeavesOfType(PERIODIC_VIEW);
 
-    await this.app.workspace.getRightLeaf(false).setViewState({
+    await this.app.workspace.getRightLeaf(false)?.setViewState({
       type: PERIODIC_VIEW,
       active: true,
     });
@@ -262,7 +279,7 @@ export default class BrainOS extends Plugin {
   async activateParaView() {
     this.app.workspace.detachLeavesOfType(PARA_VIEW);
 
-    await this.app.workspace.getRightLeaf(false).setViewState({
+    await this.app.workspace.getRightLeaf(false)?.setViewState({
       type: PARA_VIEW,
       active: true,
     });
@@ -275,7 +292,7 @@ export default class BrainOS extends Plugin {
   async activateMediaView() {
     this.app.workspace.detachLeavesOfType(MEDIA_CONSUMPTION_VIEW);
 
-    await this.app.workspace.getRightLeaf(false).setViewState({
+    await this.app.workspace.getRightLeaf(false)?.setViewState({
       type: MEDIA_CONSUMPTION_VIEW,
       active: true,
     });
@@ -288,7 +305,7 @@ export default class BrainOS extends Plugin {
   async activateIntegratorView() {
     this.app.workspace.detachLeavesOfType(INTEGRATOR_VIEW);
 
-    await this.app.workspace.getRightLeaf(false).setViewState({
+    await this.app.workspace.getRightLeaf(false)?.setViewState({
       type: INTEGRATOR_VIEW,
       active: true,
     });

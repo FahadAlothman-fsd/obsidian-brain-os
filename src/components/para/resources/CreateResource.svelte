@@ -6,7 +6,7 @@
   import { app, plugin, tagsStore } from "../../../stores";
   import { tagExists } from "../../../utils";
   import Input from "../../UI/Input.svelte";
-  import TagInput from "../../UI/TagInput.svelte";
+  import TemplateInput from "../../UI/TemplateInput.svelte";
   import type { Tag } from "../../../types";
   import { createPARAFile, type createPARADataType } from "../../../utils/para";
   import { RESOURCE } from "../../../constants";
@@ -88,6 +88,7 @@
       para_tag: "",
       entry_file: "",
       folder_path: "",
+      related_templates: [],
     };
     if (formData["resource_tag"]) {
       // TODO: check that the resource tag doesn't exist
@@ -105,10 +106,11 @@
     }
 
     if (
-      formData["resource_related_areas"] &&
-      formData["resource_related_areas"].length > 0
+      formData["resource_templates"] &&
+      formData["resource_templates"].length > 0
     ) {
       // TODO: check that the main area is not tagged here
+      data.related_templates = formData["resource_templates"];
     }
 
     if (
@@ -118,6 +120,7 @@
     ) {
       console.log(data);
       await createPARAFile(data, brainOS.app, brainOS.settings, RESOURCE);
+      createResourceForm.reset();
     } else {
       // TODO: display error indicating that information added is not correct
     }
@@ -145,7 +148,7 @@
     error={$createResourceForm.hasError("resource_index.required")}
   />
   <hr />
-  <TagInput
+  <TemplateInput
     title={"Resource Templates"}
     placeholder={"fiction-books.md"}
     inputField={resourceTemplates}

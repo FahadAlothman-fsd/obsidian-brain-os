@@ -6,6 +6,8 @@ import { FileSuggest, FolderSuggest } from './utils/suggesters';
 
 
 export const DEFAULT_SETTINGS: BrainSettings = {
+  otherTemplates: "99 - Meta/00 - Templates/Other Templates",
+  otherTemplatesHeader: "Related Templates",
   para: {
     usePARANotes: true,
     projects: {
@@ -93,6 +95,40 @@ export class SettingTab extends PluginSettingTab {
             this.display();
           })
       );
+
+    containerEl.createEl('h1', { text: 'Other Templates' });
+
+    new Setting(containerEl)
+      .setName('Other Templates Folder')
+      .setDesc('for templates that can be used across different org systems')
+      .addText((text) => {
+        new FolderSuggest(this.app, text.inputEl);
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.otherTemplates)
+          .setValue(this.plugin.settings.otherTemplates)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.otherTemplates = value;
+              await this.plugin.saveSettings();
+            }, 500))
+      }
+      );
+
+    new Setting(containerEl)
+      .setName('Other Templates Header:')
+      .setDesc('Where the Other templates module is in a PARA README file')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.otherTemplatesHeader)
+          .setValue(this.plugin.settings.otherTemplatesHeader)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.otherTemplatesHeader = value;
+              await this.plugin.saveSettings();
+            }, 500)
+          )
+      );
+
     if (this.plugin.settings.periodic.usePeriodicNotes) {
 
       this.periodicSettings()
@@ -413,6 +449,7 @@ export class SettingTab extends PluginSettingTab {
               await this.plugin.saveSettings();
             }, 500)))
 
+    containerEl.createEl('h2', { text: 'Archive Settings' });
     new Setting(containerEl)
       .setName('Archives Folder:')
       .setDesc('Where all your archives will be placed')

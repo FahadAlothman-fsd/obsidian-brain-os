@@ -1,7 +1,16 @@
 <script lang="ts">
   import { createScrollArea, melt } from "@melt-ui/svelte";
+  import type { Writable, writable } from "svelte/store";
 
-  export let flavors: string[];
+  type itemType = {
+    id: string;
+    label: string;
+    link?: string;
+  };
+  export let items: itemType[] = [];
+
+  export let handleLinkClick: (link: string) => void;
+
   const {
     elements: {
       root,
@@ -21,15 +30,20 @@
 
 <div
   use:melt={$root}
-  class="relative h-72 w-100 overflow-hidden rounded-md border bg-white text-magnum-900 shadow-lg"
+  class="relative h-72 min-w-full overflow-hidden rounded-md border bg-white text-magnum-900 shadow-lg"
 >
   <div use:melt={$viewport} class="h-full w-full rounded-[inherit]">
     <div use:melt={$content}>
       <div class="p-4">
-        <h4 class="mb-4 font-semibold leading-none">Endless Flavors</h4>
-        {#each flavors as flavor (flavor)}
+        {#each items as item (item.id)}
           <div class="text-sm">
-            {flavor}
+            {#if item.link}
+              <a href="#" on:click={() => handleLinkClick(item.link ?? "")}>
+                {item.label}
+              </a>
+            {:else}
+              {item.label}
+            {/if}
           </div>
           <div role="separator" class="my-2 h-px w-full bg-magnum-600" />
         {/each}

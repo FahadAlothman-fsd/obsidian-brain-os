@@ -35,6 +35,8 @@ export type Tag = {
 export interface BrainSettings {
   para: paraType
   periodic: periodicType
+  otherTemplates: string
+  otherTemplatesHeader: string
 }
 
 

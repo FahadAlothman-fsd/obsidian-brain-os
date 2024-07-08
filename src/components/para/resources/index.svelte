@@ -1,7 +1,7 @@
 <script lang="ts">
   import Accordian from "../../UI/Accordian.svelte";
-  import ScrollArea from "../../UI/ScrollArea.svelte";
   import CreateResource from "./CreateResource.svelte";
+  import ListResources from "./ListResources.svelte";
 
   const sections = [
     {
@@ -12,6 +12,7 @@
     // TODO: add an edit resource that uses the same component as create but fills in the info
     // it opens only if one of the two following situations occur:
     // when; a resource README is open, the para view is open, the resource tab is active
+    { id: "list-resources", title: "Resources", component: ListResources },
   ];
 </script>
 

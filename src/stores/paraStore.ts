@@ -1,8 +1,13 @@
 import { writable } from "svelte/store";
-import BrainOS from '../main'
+import { Archive, Area, Project, Resource } from "../para";
 
 
-const plugin = writable<BrainOS>();
+const PARAStore = writable<{
+  project: Project;
+  area: Area;
+  resources: Resource;
+  archives: Archive;
+} | undefined>()
 
 
-export default { plugin }
+export { PARAStore }

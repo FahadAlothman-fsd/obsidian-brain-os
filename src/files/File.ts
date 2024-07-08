@@ -43,6 +43,45 @@ export class File {
     return false;
   }
 
+  getAllFilesInFolder(fileFolder: string) {
+    const folder = this.app.vault.getAbstractFileByPath(fileFolder)
+
+    if (folder instanceof TFolder) {
+      const subFolderList = folder.children
+        .sort()
+        .filter((file) => file instanceof TFolder);
+      const IndexList = subFolderList
+        .map((subFolder) => {
+          // 优先搜索同名文件，否则搜索 XXX.README
+          if (subFolder instanceof TFolder) {
+            const { name } = subFolder;
+            const files = subFolder.children;
+            const indexFile = files.find((file) => {
+              if ((file as any).basename === name) {
+                return true;
+              }
+              if (file.path.match(/(.*\.)?README\.md/)) {
+                return true;
+              }
+            });
+
+
+            if (!indexFile) {
+              logMessage(
+                `${I18N_MAP[this.locale][`${ERROR_MESSAGE}}NO_INDEX_FILE_EXIST`]} @ ${subFolder.path}`
+              );
+            }
+
+            if (indexFile instanceof TFile) {
+              return { link: indexFile.path, name: subFolder.name, id: indexFile.path.replace('/', '-') }
+            }
+          }
+        })
+        .filter((link) => !!link)
+
+      return IndexList;
+    }
+  }
   list(fileFolder: string, condition: { tags: string[] } = { tags: [] }) {
     const folder = this.app.vault.getAbstractFileByPath(fileFolder);
 
@@ -92,10 +131,10 @@ export class File {
         .filter((link) => !!link)
         .map((link, index: number) => `${index + 1}. ${link}`);
 
-      return IndexList.join('\n');
+      return IndexList;
     }
 
-    return `No files in ${fileFolder}`;
+    return [`No files in ${fileFolder}`];
   }
 
   get(link: string, sourcePath = '', fileFolder?: string) {
@@ -140,6 +179,12 @@ export class File {
     const filepath = ctx.sourcePath;
     const tags = this.tags(filepath);
     const div = el.createEl('div');
+    const filesDiv = div.createEl('div')
+    const tagsDiv = div.createEl('div')
+    const filesHeader = filesDiv.createEl('h4')
+    filesHeader.textContent = "In PARA folder"
+    const tagsHeader = tagsDiv.createEl('h4')
+    tagsHeader.textContent = "By PARA Tag"
     const component = new Markdown(div);
     const periodicNotesPath = this.settings.periodic.periodicFolder;
 
@@ -179,7 +224,33 @@ export class File {
           b.file.link,
           `[[${window.moment(b.file.ctime.ts).format('YYYY-MM-DD')}]]`,
         ]),
-      div,
+      filesDiv,
+      component,
+      filepath
+    );
+
+
+    this.dataview.table(
+      ['File', 'Date'],
+      this.dataview
+        .pages(from)
+        .filter(
+          (b: any) =>
+            !b.file.name?.match(YEARLY_REG) &&
+            !b.file.name?.match(QUARTERLY_REG) &&
+            !b.file.name?.match(MONTHLY_REG) &&
+            !b.file.name?.match(WEEKLY_REG) &&
+            !b.file.name?.match(DAILY_REG) &&
+            !b.file.name?.match(/Template$/) &&
+            !b.file.path?.includes(`${periodicNotesPath}/Templates`) &&
+            b.file.path !== filepath
+        )
+        .sort((b: any) => b.file.ctime, 'desc')
+        .map((b: any) => [
+          b.file.link,
+          `[[${window.moment(b.file.ctime.ts).format('YYYY-MM-DD')}]]`,
+        ]),
+      tagsDiv,
       component,
       filepath
     );

@@ -6,18 +6,14 @@
     type ComboboxOptionProps,
   } from "@melt-ui/svelte";
   import { fly } from "svelte/transition";
-  import { tagsStore } from "../../stores";
+  import { templateStore, type templateType } from "../../stores";
   import type { field } from "svelte-forms";
 
   export let title = "label";
   export let placeholder = "placeholder";
   export let error: boolean;
-  export let inputField: ReturnType<typeof field<Tag[]>>;
+  export let inputField: ReturnType<typeof field<templateType[]>>;
 
-  type Tag = {
-    value: string;
-    count: number;
-  };
   const initialTags = $inputField.value || [];
 
   const {
@@ -34,16 +30,18 @@
     addOnPaste: true,
   });
 
-  const toOption = (tag: Tag): ComboboxOptionProps<Tag> => ({
-    value: tag,
-    label: tag.value,
+  const toOption = (
+    template: templateType,
+  ): ComboboxOptionProps<templateType> => ({
+    value: template,
+    label: template.name,
   });
 
   const {
     elements: { menu, input, option },
     states: { open, inputValue, touchedInput, selected },
     helpers: { isSelected },
-  } = createCombobox<Tag>({
+  } = createCombobox<templateType>({
     forceVisible: true,
   });
 
@@ -52,8 +50,7 @@
     if ($selected?.label) {
       inputField.update((values) => {
         values.value.push({
-          value: $selected.value.value,
-          count: $selected.value.count,
+          ...$selected.value,
         });
         return values;
       });
@@ -63,11 +60,11 @@
   }
 
   $: filteredTags = $touchedInput
-    ? $tagsStore.filter(({ value, count }) => {
+    ? $templateStore.filter(({ name }) => {
         const normalizedInput = $inputValue.toLowerCase();
-        return value.toLowerCase().includes(normalizedInput);
+        return name.toLowerCase().includes(normalizedInput);
       })
-    : $tagsStore;
+    : $templateStore;
 </script>
 
 <div class="flex flex-col items-start justify-center gap-2 min-w-full">
@@ -140,8 +137,8 @@
               </div>
             {/if}
             <div class="pl-4">
-              <span class="font-medium">{tag.value}</span>
-              <span class="block text-sm opacity-75">{tag.count}</span>
+              <span class="font-medium">{tag.name}</span>
+              <span class="block text-sm opacity-75">{tag.parent?.name}</span>
             </div>
           </li>
         {:else}

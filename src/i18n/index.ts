@@ -1,5 +1,5 @@
 import Periodic from './periodic'
-import { TAG, FOLDER, INDEX, MESSAGE, ERROR_MESSAGE } from '../constants'
+import { TAG, FOLDER, INDEX, MESSAGE, ERROR_MESSAGE, PLUGIN_NAME } from '../constants'
 import Para from './para'
 
 
@@ -12,7 +12,7 @@ const EN = {
   [TAG]: 'Tag',
   [FOLDER]: 'Folder',
   [INDEX]: 'Index',
-
+  [PLUGIN_NAME]: 'BrainOS',
   QUICK_JUMP: 'Double click to open periodic note for this ',
   [`${TAG}ToolTip`]:
     'Tags in PARA notes serve as the unique identifiers for indexing tasks, notes, and files',

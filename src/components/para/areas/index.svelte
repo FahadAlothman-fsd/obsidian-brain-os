@@ -1,12 +1,13 @@
 <script lang="ts">
   import Accordian from "../../UI/Accordian.svelte";
-  import ScrollArea from "../../UI/ScrollArea.svelte";
   import CreateArea from "./CreateArea.svelte";
+  import ListAreas from "./ListAreas.svelte";
 
   const sections = [
     { id: "create-area", title: "Create Area", component: CreateArea },
     // TODO: add an edit area that uses the same component as create but fills in the info
     // it should be only when a area README is open
+    { id: "list-areas", title: "Areas", component: ListAreas },
   ];
 </script>
 

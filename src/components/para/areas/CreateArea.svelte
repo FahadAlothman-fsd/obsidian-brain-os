@@ -5,7 +5,7 @@
   import { app, plugin, tagsStore } from "../../../stores";
   import { tagExists } from "../../../utils";
   import { Switch, Input, ComboBox, TagInput } from "../../UI";
-  import type { Tag } from "../../../types";
+  import TemplateInput from "../../UI/TemplateInput.svelte";
   import {
     createPARAFile,
     findParaFile,
@@ -36,12 +36,16 @@
   // );
   //
   // TODO: add a templates tagsinput like but the suggestions being templates for this area
+
+  const areaTemplates = field("area_templates", [], [], {
+    validateOnChange: true,
+  });
   const createAreaForm = form(
     areaSwitch,
     areaTag,
     areaFolder,
     areaIndex,
-    // projectRelatedAreas,
+    areaTemplates,
   );
 
   const unsubAreaSwitch = areaTag.subscribe((areaTag) => {
@@ -103,6 +107,7 @@
       para_tag: "",
       entry_file: "",
       folder_path: "",
+      related_templates: [],
     };
     if (formData["area_tag"]) {
       data.para_tag = formData["area_tag"];
@@ -131,6 +136,10 @@
 
     if (formData["area_index"]) {
       data.entry_file = formData["area_index"];
+    }
+
+    if (formData["area_templates"] && formData["area_templates"].length > 0) {
+      data.related_templates = formData["area_templates"];
     }
 
     if (
@@ -182,10 +191,13 @@
     error={$createAreaForm.hasError("project_index.required")}
   />
   <hr />
-  <!-- <TagInput -->
-  <!--   inputField={projectRelatedAreas} -->
-  <!--   error={$createProjectForm.hasError("project_related_areas.required")} -->
-  <!-- /> -->
+
+  <TemplateInput
+    title={"Project Templates"}
+    placeholder={"live-session.md"}
+    inputField={areaTemplates}
+    error={$createAreaForm.hasError("area_templates.required")}
+  />
   <button
     type="button"
     disabled={!$createAreaForm.valid || !$createAreaForm.dirty}
