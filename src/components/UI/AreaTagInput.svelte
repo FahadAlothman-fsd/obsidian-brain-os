@@ -6,15 +6,19 @@
     type ComboboxOptionProps,
   } from "@melt-ui/svelte";
   import { fly } from "svelte/transition";
-  import { templateStore, type templateType, plugin } from "../../stores";
-  import { getRelativePath } from "../../utils";
+  import { tagsStore, PARATags } from "../../stores";
   import type { field } from "svelte-forms";
 
   export let title = "label";
   export let placeholder = "placeholder";
   export let error: boolean;
-  export let inputField: ReturnType<typeof field<templateType[]>>;
+  export let inputField: ReturnType<typeof field<Tag[]>>;
+  export let no_tags_message: string = "No results found";
 
+  type Tag = {
+    value: string;
+    count: number;
+  };
   const initialTags = $inputField.value || [];
 
   const {
@@ -26,41 +30,21 @@
     defaultTags: initialTags,
     unique: true,
     add(tag) {
-      const template = $templateStore.find((temp) => temp.path === tag);
-      let relativePath: string | undefined;
-      if (template && $plugin) {
-        relativePath = getRelativePath(
-          $plugin.settings.otherTemplates,
-          template.path,
-        );
-      }
-
-      return { id: template?.path || tag, value: relativePath || tag };
+      return { id: tag, value: tag };
     },
     addOnPaste: true,
   });
 
-  const toOption = (
-    template: templateType,
-  ): ComboboxOptionProps<templateType> => {
-    let relativePath: string | undefined;
-    if ($plugin) {
-      relativePath = getRelativePath(
-        $plugin.settings.otherTemplates,
-        template.path,
-      );
-    }
-    return {
-      value: template,
-      label: template.name,
-    };
-  };
+  const toOption = (tag: Tag): ComboboxOptionProps<Tag> => ({
+    value: tag,
+    label: tag.value,
+  });
 
   const {
     elements: { menu, input, option },
     states: { open, inputValue, touchedInput, selected },
     helpers: { isSelected },
-  } = createCombobox<templateType>({
+  } = createCombobox<Tag>({
     forceVisible: true,
   });
 
@@ -69,21 +53,26 @@
     if ($selected?.label) {
       inputField.update((values) => {
         values.value.push({
-          ...$selected.value,
+          value: $selected.value.value,
+          count: $selected.value.count,
         });
         return values;
       });
-      addTag($selected.value.path);
+      addTag($selected.label);
       // $inputValue = $selected.label;
     }
   }
 
+  PARATags.PARASubscribe((paratags) => {
+    console.log(paratags);
+  });
+
   $: filteredTags = $touchedInput
-    ? $templateStore.filter(({ name }) => {
+    ? $tagsStore.filter(({ value, count }) => {
         const normalizedInput = $inputValue.toLowerCase();
-        return name.toLowerCase().includes(normalizedInput);
+        return value.toLowerCase().includes(normalizedInput);
       })
-    : $templateStore;
+    : $tagsStore;
 </script>
 
 <div class="flex flex-col items-start justify-center gap-2 min-w-full">
@@ -139,7 +128,7 @@
         class="flex max-h-full rounded-lg min-w-full flex-col gap-0 overflow-y-auto bg-white px-2 py-2 text-black"
         tabindex="0"
       >
-        {#each filteredTags as tag (tag.path)}
+        {#each filteredTags as tag, index (index)}
           <li
             use:melt={$option(toOption(tag))}
             class="relative cursor-pointer scroll-my-2 rounded-md py-2 pl-4 pr-4
@@ -156,13 +145,13 @@
               </div>
             {/if}
             <div class="pl-4">
-              <span class="font-medium">{tag.name}</span>
-              <span class="block text-sm opacity-75">{tag.parent?.name}</span>
+              <span class="font-medium">{tag.value}</span>
+              <span class="block text-sm opacity-75">{tag.count}</span>
             </div>
           </li>
         {:else}
           <li class="relative cursor-pointer rounded-md py-1 pl-8 pr-4">
-            No results found
+            {no_tags_message}
           </li>
         {/each}
       </div>

@@ -23,7 +23,7 @@
   )}
   {...$root}
 >
-  {#each items as { id, title, description, component }, i}
+  {#each items as { id, title, description, component, props }, i}
     <div
       use:melt={$item(id)}
       class="overflow-hidden transition-colors first:rounded-t-xl
@@ -57,7 +57,7 @@
               {description}
             </div>
           {:else if component}
-            <svelte:component this={component} />
+            <svelte:component this={component} {...props} />
           {/if}
         </div>
       {/if}

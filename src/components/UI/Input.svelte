@@ -3,7 +3,7 @@
 
   export let title = "label";
   export let placeholder = "placeholder";
-  export let error: boolean;
+  export let error: boolean = false;
   export let inputField: ReturnType<typeof field>;
 </script>
 

@@ -4,6 +4,7 @@ import ComboBox from './ComboBox.svelte';
 import TagInput from './TagInput.svelte';
 import Tabs from './Tabs.svelte';
 import Switch from './Switch.svelte';
+import AreaComboBox from './AreasComboBox.svelte'
 
 export {
   Grid,
@@ -12,5 +13,5 @@ export {
   TagInput,
   Tabs,
   Switch,
-
+  AreaComboBox,
 }
