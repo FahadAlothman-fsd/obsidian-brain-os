@@ -7,6 +7,7 @@
   import { plugin } from "../../stores";
   import { QUARTERLY } from "../../constants";
   import { Grid } from "../UI";
+  import { TFile } from "obsidian";
   let cols = 2;
 
   const {
@@ -52,13 +53,17 @@
     console.log(date);
     if (brainOS !== undefined) {
       console.log(periodicFileName);
-      await createPeriodicFile(
+      const file = await createPeriodicFile(
         date,
         QUARTERLY,
         brainOS.settings.periodic.periodicFolder,
         brainOS.settings.periodic.quarterly.template,
-        brainOS.app
+        brainOS.app,
       );
+
+      if (file instanceof TFile) {
+        brainOS.app.workspace.getLeaf().openFile(file);
+      }
     }
   };
 

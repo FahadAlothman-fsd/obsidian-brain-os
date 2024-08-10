@@ -2,9 +2,14 @@
   import { get } from "svelte/store";
   import { form, field } from "svelte-forms";
   import { required } from "svelte-forms/validators";
-  import { app, plugin, tagsStore } from "../../../stores";
+  import {
+    areaStore,
+    AreaEntryStore,
+    plugin,
+    tagsStore,
+  } from "../../../stores";
   import { tagExists } from "../../../utils";
-  import { Switch, Input, ComboBox, TagInput } from "../../UI";
+  import { Switch, Input, AreasComboBox } from "../../UI";
   import TemplateInput from "../../UI/TemplateInput.svelte";
   import {
     createPARAFile,
@@ -13,17 +18,34 @@
   } from "../../../utils/para";
   import { onDestroy } from "svelte";
   import { SUB_AREA, AREA } from "../../../constants";
+  import type { AreaEntryType } from "../../../types/paraTypes";
+  import { TFile } from "obsidian";
 
-  const areaSwitch = field("area_switch", false);
-  const areaTag = field("area_tag", "", [required()], {
+  export let area: AreaEntryType | undefined;
+
+  const areaSwitch = field(
+    "area_switch",
+    area && area.tag.split("/").length > 1 ? true : false,
+  );
+  const areaTag = field("area_tag", area ? area.tag : "", [required()], {
     validateOnChange: true,
   });
-  const areaFolder = field("area_folder", "", [required()], {
-    validateOnChange: true,
-  });
-  const areaIndex = field("area_index", "", [required()], {
-    validateOnChange: true,
-  });
+  const areaFolder = field(
+    "area_folder",
+    area ? area.folder_name?.name : "",
+    [required()],
+    {
+      validateOnChange: true,
+    },
+  );
+  const areaIndex = field(
+    "area_index",
+    area ? area.README.name : "",
+    [required()],
+    {
+      validateOnChange: true,
+    },
+  );
   // TODO: rethink if there should be related areas to an area/sub-area or not
   //
   // const projectRelatedAreas = field<Tag[]>(
@@ -37,20 +59,47 @@
   //
   // TODO: add a templates tagsinput like but the suggestions being templates for this area
 
-  const areaTemplates = field("area_templates", [], [], {
-    validateOnChange: true,
-  });
+  const areaPrioirty = field(
+    "area_priority",
+    area ? area.area_priority : "",
+    [],
+    {
+      validateOnChange: true,
+    },
+  );
+  const areaTemplates = field<TFile[]>(
+    "area_templates",
+    area ? Array.from(area.related_templates) : [],
+    [],
+    {
+      validateOnChange: true,
+    },
+  );
+
   const createAreaForm = form(
     areaSwitch,
     areaTag,
     areaFolder,
     areaIndex,
+    areaPrioirty,
     areaTemplates,
   );
 
+  $: if (
+    (!area && $areaTemplates.value.length > 0) ||
+    (area && $areaTemplates.value.length !== area.related_templates.length)
+  ) {
+    areaTemplates.update((val) => {
+      return {
+        ...val,
+        dirty: true,
+      };
+    });
+  }
+
   const unsubAreaSwitch = areaTag.subscribe((areaTag) => {
     const area_switch = get(areaSwitch);
-    if (areaTag.value.length > 0) {
+    if (areaTag.value.length > 0 && areaTag.dirty) {
       const areaName = area_switch.value
         ? areaTag.value.substring(areaTag.value.lastIndexOf("/") + 1)
         : areaTag.value[0] === "#"
@@ -61,27 +110,30 @@
         areaFolder.set("");
         areaIndex.set("");
       } else if (!tagExists($tagsStore, areaTag.value)) {
-        console.log(areaTag.value, areaName);
-        areaFolder.set(areaName);
-        areaIndex.set(`${areaName}.README.md`);
+        if (!tagExists($tagsStore, areaTag.value)) {
+          if ($plugin) {
+            if (areaTag.value.startsWith($plugin.settings.para.areas.prefix)) {
+              areaFolder.set(
+                areaTag.value
+                  .replace(/[ /]/g, "-")
+                  .substring($plugin.settings.para.areas.prefix.length),
+              );
+              areaIndex.set(`${areaName}.README.md`);
+            } else {
+              areaFolder.set(areaTag.value.replace(/[ /]/g, "-"));
+              areaIndex.set(`${areaName}.README.md`);
+            }
+          }
+        }
       }
     }
   });
 
   const handleShouldOpen = (inputValue: string, selected: string) => {
-    // const prjTag = get(projectTag);
     let open = true;
 
     const tag = inputValue.split("/");
-    // console.log(tag);
     tag.forEach((_, index) => {
-      // console.log(
-      //   index,
-      //   value,
-      //   selected,
-      //   tag.slice(0, index + 1).join("/"),
-      //   tag.slice(0, index + 1).join("/") === selected,
-      // );
       if (tag.slice(0, index + 1).join("/") === selected) {
         open = false;
         return;
@@ -107,10 +159,18 @@
       para_tag: "",
       entry_file: "",
       folder_path: "",
-      related_templates: [],
     };
     if (formData["area_tag"]) {
-      data.para_tag = formData["area_tag"];
+      if (
+        $plugin &&
+        formData["area_tag"].startsWith($plugin.settings.para.areas.prefix)
+      ) {
+        data.para_tag = formData["area_tag"];
+      } else if ($plugin) {
+        data.para_tag =
+          $plugin.settings.para.areas.prefix + formData["area_tag"];
+      }
+      console.log(data.para_tag);
     }
 
     if (formData["area_folder"]) {
@@ -142,6 +202,10 @@
       data.related_templates = formData["area_templates"];
     }
 
+    if (formData["area_priority"]) {
+      data.priority = formData["area_priority"];
+    }
+
     if (
       data.entry_file !== "" &&
       data.para_tag !== "" &&
@@ -150,8 +214,22 @@
       // TODO: add a way to handle area and sub-area creation
       // for sub-area: first look for the parent tag and find the folder name of the parent area
       console.log(data);
-      await createPARAFile(data, brainOS.app, brainOS.settings, type);
+      const file = await createPARAFile(
+        data,
+        brainOS.app,
+        brainOS.settings,
+        type,
+      );
       createAreaForm.reset();
+      areaStore.loadAreaEntires();
+      if ($AreaEntryStore) {
+        AreaEntryStore.set(areaStore.getAreaByTag($AreaEntryStore.tag));
+        console.log($AreaEntryStore);
+      }
+
+      if (file instanceof TFile) {
+        brainOS.app.workspace.getLeaf().openFile(file);
+      }
     } else {
       // TODO: display error indicating that information added is not correct
     }
@@ -170,7 +248,7 @@
       error={$createAreaForm.hasError("project_tag.required")}
     />
   {:else}
-    <ComboBox
+    <AreasComboBox
       inputField={areaTag}
       title={"Tag"}
       placeholder={"#area/sub-area/project..."}
@@ -192,11 +270,11 @@
   />
   <hr />
 
+  <Input title={"Priority"} placeholder={"1"} inputField={areaPrioirty} />
   <TemplateInput
     title={"Project Templates"}
     placeholder={"live-session.md"}
     inputField={areaTemplates}
-    error={$createAreaForm.hasError("area_templates.required")}
   />
   <button
     type="button"

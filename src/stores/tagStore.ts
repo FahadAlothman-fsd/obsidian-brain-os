@@ -1,12 +1,21 @@
 import { writable, derived } from "svelte/store";
 import BrainOS from '../main'
-import { app } from "./pluginStore";
+import { app, plugin } from "./pluginStore";
 import type {
   App,
   MetadataCache,
 } from 'obsidian';
-import type { Tag as tagType } from "../types";
+import type { BrainSettings, Tag as tagType } from "../types";
 import { Notice, parseFrontMatterAliases, parseFrontMatterTags } from "obsidian";
+import type { PARATypes } from "../para";
+import { getPARATagsByFolder } from "../utils";
+import { ARCHIVE, AREA, PROJECT, RESOURCE } from "../constants";
+
+type TagType = {
+  name: string,
+  type: PARATypes,
+}
+
 
 const tagBody = /^#[^\u2000-\u206F\u2E00-\u2E7F'!"#$%&()*+,.:;<=>?@^`{|}~\[\]\\\s]+$/;
 
@@ -105,11 +114,18 @@ export class Replacement {
 }
 
 
-const tags = (() => {
+export const tags = (() => {
 
   const { subscribe, set } = writable<tagType[]>([])
-  let _metaCache: MetadataCache | undefined
-  app.subscribe(($app) => _metaCache = $app?.metadataCache ?? undefined)
+  let _app: App | undefined
+  let _settings: BrainSettings | undefined
+  const PARATags = writable<TagType[]>([])
+  plugin.subscribe(($plugin) => {
+    if ($plugin) {
+      _app = $plugin.app
+      _settings = $plugin.settings
+    }
+  })
 
   // async function renameTag(tagName: string, toName = tagName, newName: string) {
   //   // const newName = await promptForNewName(tagName, toName);
@@ -164,11 +180,121 @@ const tags = (() => {
   //     return targets;
   // }
 
+
+  function loadProjectTags(): TagType[] {
+    if (_app && _settings) {
+      console.log("in project tags")
+
+      const projectTags = getPARATagsByFolder(_app, _settings.para.projects.folder)
+
+      if (projectTags && projectTags.length > 0) {
+
+        return projectTags.map((tag) => {
+          return {
+            name: tag,
+            type: PROJECT,
+          }
+        })
+      }
+      return []
+    }
+
+    return []
+
+  }
+
+  function loadAreaTags(): TagType[] {
+
+    if (_app && _settings) {
+
+      const areaTags = getPARATagsByFolder(_app, _settings.para.areas.folder)
+
+      if (areaTags && areaTags.length > 0) {
+
+        return areaTags.map((tag) => {
+          return {
+            name: tag,
+            type: AREA,
+          }
+        })
+      }
+      return []
+    }
+
+    return []
+  }
+
+  function loadResourceTags(): TagType[] {
+
+    if (_app && _settings) {
+
+      const resourceTags = getPARATagsByFolder(_app, _settings.para.resources.folder)
+
+      if (resourceTags && resourceTags.length > 0) {
+
+        return resourceTags.map((tag) => {
+          return {
+            name: tag,
+            type: RESOURCE,
+          }
+        })
+      }
+      return []
+    }
+
+    return []
+  }
+
+  function loadArchiveTags(): TagType[] {
+
+    if (_app && _settings) {
+
+      const archivedTags = getPARATagsByFolder(_app, _settings.para.archives.folder)
+
+      if (archivedTags && archivedTags.length > 0) {
+
+        return archivedTags.map((tag) => {
+          return {
+            name: tag,
+            type: ARCHIVE,
+          }
+        })
+      }
+      return []
+    }
+
+    return []
+  }
+
+  function loadPARATags() {
+
+    const pTags: TagType[] = []
+    const prjTag = loadProjectTags()
+    const areaTag = loadAreaTags()
+    const resTag = loadResourceTags()
+    const archTag = loadArchiveTags()
+    if (prjTag.length > 0) {
+      pTags.push(...prjTag)
+    }
+
+    if (areaTag.length > 0) {
+      pTags.push(...areaTag)
+    }
+    if (resTag.length > 0) {
+      pTags.push(...resTag)
+    }
+    if (archTag.length > 0) {
+      pTags.push(...archTag)
+    }
+
+    PARATags.set(pTags)
+  }
+
   function loadTags() {
-    if (_metaCache) {
+    if (_app) {
       set(Object.entries(
         // @ts-ignore comment
-        _metaCache.getTags() as Record<string, number>,
+        _app.metadataCache.getTags() as Record<string, number>,
       )
         .sort((a, b) => b[1] - a[1])
         .map(([tag, count]) => {
@@ -180,6 +306,8 @@ const tags = (() => {
   return {
     subscribe,
     reload: () => loadTags(),
+    reloadPARA: () => loadPARATags(),
+    PARASubscribe: PARATags.subscribe,
   }
 })()
 

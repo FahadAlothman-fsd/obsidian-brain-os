@@ -2,12 +2,12 @@ import { Project } from "./Project";
 import { Area } from "./Area";
 import { Resource } from "./Resource";
 import { Archive } from "./Archive";
-import { PROJECT, AREA, SUB_AREA, RESOURCE } from "../constants";
+import { PROJECT, AREA, SUB_AREA, RESOURCE, ARCHIVE } from "../constants";
 // import { Tag } from "../utils/tag";
 import type { BrainSettings } from "../types";
 
 
-type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA | typeof RESOURCE
+type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA | typeof RESOURCE | typeof ARCHIVE
 
 
 function getParaType(settings: BrainSettings, tag: string): PARATypes | undefined {

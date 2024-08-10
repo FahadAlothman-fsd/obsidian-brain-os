@@ -106,6 +106,7 @@ export class File {
 
             if (condition.tags.length) {
               const tags = this.tags(indexFile?.path || '');
+              console.log(tags, condition.tags, fileFolder)
               // tags: #work/project-1 #work/project-2
               // condition.tags: #work
               if (!this.hasCommonPrefix(tags, condition.tags)) {

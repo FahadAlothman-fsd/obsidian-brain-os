@@ -1,8 +1,10 @@
-import { TFolder, type App, TFile, TAbstractFile } from "obsidian";
+import { TFolder, type App, TFile, TAbstractFile, Notice } from "obsidian";
 import type { BrainSettings } from "../types";
 import { createFile } from "./files";
-import { PROJECT, AREA, SUB_AREA, RESOURCE } from "../constants";
+import { PROJECT, AREA, SUB_AREA, RESOURCE, ERROR_MESSAGE } from "../constants";
 import type { templateType } from "../stores";
+import { I18N_MAP } from "../i18n";
+import { plugin } from "../stores";
 
 export type createPARADataType = {
   entry_file: string;
@@ -10,10 +12,92 @@ export type createPARADataType = {
   folder_path: string;
   related_areas?: string[];
   related_templates?: templateType[]
+  deadline?: string;
+  priority?: string;
+  status?: string;
 }
 export type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA | typeof RESOURCE
 export type findPARAFileConditionsType = {
   tags: string[];
+}
+
+
+export function getParaREADMEFiles(
+  app: App,
+  dir: string
+) {
+
+  const locale = window.moment().locale()
+
+  if (!app) {
+    // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
+    new Notice(
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_APP_EXIST`],
+    );
+    return [];
+  }
+
+  if (dir === "") {
+
+    // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
+    new Notice(
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_DIR_EXIST`],
+    );
+    return [];
+  }
+
+  const folder = app.vault.getAbstractFileByPath(dir);
+
+  if (folder instanceof TFolder) {
+
+    // DFS for all PARA in the PARA folder specified in the dir
+    const stack = [folder]
+    const visited = new Set<TAbstractFile>()
+    const result: TAbstractFile[] = []
+
+    while (stack.length > 0) {
+      const vertex = stack.pop()
+
+      if (vertex !== undefined) {
+        if (!visited.has(vertex)) {
+          visited.add(vertex)
+
+
+          if (vertex.children.length > 0) {
+            const TemplateFile = vertex.children.sort().filter((file) => {
+              if (file instanceof TFile) {
+
+                if (file.path.match(/(.*\.)README\.md/)) {
+                  return true;
+                }
+              }
+            });
+            if (TemplateFile) {
+              result.push(...TemplateFile)
+            }
+
+          }
+          for (const neighbor of vertex.children.sort().filter((file) => file instanceof TFolder)) {
+            stack.push(neighbor as TFolder);
+          }
+        }
+      }
+    }
+
+    console.log(result)
+    if (result.length === 0) {
+      new Notice(
+        I18N_MAP[locale][`${ERROR_MESSAGE}NO_PARA_ENTRIES`] + dir,
+      );
+
+      return result
+    }
+
+    return result
+
+
+  }
+  return []
 }
 
 export function generateHeaderRegExp(header: string) {
@@ -158,16 +242,21 @@ function hasCommonPrefix(tags1: string[], tags2: string[]) {
 
 
 export const createPARAFile = async (values: createPARADataType, app: App, settings: BrainSettings, type: PARATypes) => {
+
+  console.log(values)
+  const locale = window.localStorage.getItem('language') || 'en';
   if (!app || !settings) {
     // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
+    new Notice(
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_APP_EXIST`],
+    )
     return;
   }
 
-  const locale = window.localStorage.getItem('language') || 'en';
+  let metadata: { tags: string[] } & Record<string, string | number | string[]> = { tags: [values.para_tag.replace(/^#/, "")] }
   let templateFile = '';
   let folder = '';
   let file = '';
-  let tag = '';
   let INDEX = '';
   let path = '';
   if (type === AREA || type === SUB_AREA) {
@@ -179,9 +268,33 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
     path = settings.para.areas.folder
     templateFile = settings.para.areas.template
 
+    if (values.priority) {
+      metadata[settings.para.areas.priority_frontmatter] = values.priority
+    }
+
   } else if (type === PROJECT) {
     path = settings.para.projects.folder
     templateFile = settings.para.projects.template
+
+    if (values.deadline) {
+      metadata[settings.para.projects.deadline_frontmatter] = values.deadline
+    }
+
+    if (values.priority) {
+      metadata[settings.para.projects.priority_frontmatter] = values.priority
+    }
+
+    if (values.status) {
+      // TODO: get all the statuses from settings and check if the value of the status 
+      // if it doesn't exist, Notice and return error
+      console.log(values.status)
+      metadata[settings.para.projects.status_frontmatter] = values.status
+    }
+
+    if (values.related_areas) {
+      metadata[settings.para.projects.related_areas_frontmatter] = values.related_areas
+    }
+
   } else if (type === RESOURCE) {
     path = settings.para.resources.folder
     templateFile = settings.para.resources.template
@@ -191,14 +304,16 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
 
 
   const key = values.folder_path
-  tag = values.para_tag
+  // tag = values.para_tag
   INDEX = values.entry_file
 
+  if (values.related_areas) {
+    metadata.related_areas = values.related_areas
+  }
 
   folder = `${path}/${key}`;
   file = `${folder}/${INDEX}`;
 
-  let related_templates_section
 
   if (values.related_templates) {
 
@@ -207,29 +322,35 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
       const tempFile = app.vault.getFileByPath(template.path)
       console.log(tempFile)
       if (tempFile instanceof TFile) {
-        const link = app.metadataCache.fileToLinktext(
-          tempFile,
-          tempFile?.path
-        );
-        console.log(`[[${link}|${tempFile.name}]]`)
-        return `[[${link}|${tempFile.name}]]`;
+        // const link = app.metadataCache.fileToLinktext(
+        //   tempFile,
+        //   tempFile.path
+        // );
+        // console.log(app.metadataCache.getFirstLinkpathDest(link, folder))
+        console.log(`[[${tempFile.path}|${tempFile.name}]]`)
+        return `[[${tempFile.path}|${tempFile.name}]]`;
       }
     })
-      .filter((link) => !!link)
-      .map((link) => `- ${link}`)
+      .filter((link) => link !== undefined)
 
-    if (templates.length > 0) {
+    if (templates && templates.length > 0) {
 
-      related_templates_section = [`# ${settings.otherTemplatesHeader} \n`, ...templates].join("\n")
+      metadata[settings.other_templates_frontmatter] = templates
     }
   }
+  console.log(metadata)
 
-  await createFile(app, {
+
+  const createdFile = await createFile(app, {
     locale,
     templateFile,
     folder,
     file,
-    tag,
-    append: related_templates_section
+    metadata,
   });
+  if (createdFile instanceof TFile) {
+    return createdFile
+
+  }
+
 };

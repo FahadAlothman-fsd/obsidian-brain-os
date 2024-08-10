@@ -5,9 +5,8 @@
   import type { field } from "svelte-forms";
   import { writable } from "svelte/store";
 
-  export let initialState: boolean = false;
-  export let inputField: ReturnType<typeof field>;
-  export let state = writable<boolean>(initialState);
+  export let inputField: ReturnType<typeof field<boolean>>;
+  export let state = writable<boolean>($inputField.value);
   const {
     elements: { root, input },
   } = createSwitch({

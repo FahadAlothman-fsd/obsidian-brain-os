@@ -3,26 +3,58 @@
   import { get, writable } from "svelte/store";
   import { form, field } from "svelte-forms";
   import { required } from "svelte-forms/validators";
-  import { app, plugin, tagsStore } from "../../../stores";
+  import {
+    plugin,
+    ResourceEntryStore,
+    resourceStore,
+    tagsStore,
+  } from "../../../stores";
   import { tagExists } from "../../../utils";
   import Input from "../../UI/Input.svelte";
   import TemplateInput from "../../UI/TemplateInput.svelte";
-  import type { Tag } from "../../../types";
   import { createPARAFile, type createPARADataType } from "../../../utils/para";
   import { RESOURCE } from "../../../constants";
+  import type { ResourceEntryType } from "../../../types/paraTypes";
+  import { TFile } from "obsidian";
 
-  const resourceTag = field("resource_tag", "", [required()], {
-    validateOnChange: true,
-  });
-  const resourceFolder = field("resource_folder", "", [required()], {
-    validateOnChange: true,
-  });
-  const resourceIndex = field("resource_index", "", [required()], {
-    validateOnChange: true,
-  });
-  const resourceTemplates = field("resource_templates", [], [], {
-    validateOnChange: true,
-  });
+  export let resource: ResourceEntryType | undefined;
+
+  const resourceTag = field(
+    "resource_tag",
+    resource
+      ? resource.tag.substring(
+          $plugin ? $plugin.settings.para.resources.prefix.length : 0,
+        )
+      : "",
+    [required()],
+    {
+      validateOnChange: true,
+    },
+  );
+  const resourceFolder = field(
+    "resource_folder",
+    resource ? resource.folder_name?.name : "",
+    [required()],
+    {
+      validateOnChange: true,
+    },
+  );
+  const resourceIndex = field(
+    "resource_index",
+    resource ? resource.README.name : "",
+    [required()],
+    {
+      validateOnChange: true,
+    },
+  );
+  const resourceTemplates = field<TFile[]>(
+    "resource_templates",
+    resource ? Array.from(resource.related_templates) : [],
+    [],
+    {
+      validateOnChange: true,
+    },
+  );
 
   // TODO: add a templates tagsinput like but the suggestions being templates for this resource
   const createResourceForm = form(
@@ -32,46 +64,46 @@
     resourceTemplates,
   );
 
-  resourceTag.subscribe((prjTag) => {
-    if (prjTag.value.length > 0) {
-      const resourceName = prjTag.value.substring(
-        prjTag.value.lastIndexOf("/") + 1,
+  $: if (
+    (!resource && $resourceTemplates.value.length > 0) ||
+    (resource &&
+      $resourceTemplates.value.length !== resource.related_templates.length)
+  ) {
+    resourceTemplates.update((val) => {
+      return {
+        ...val,
+        dirty: true,
+      };
+    });
+  }
+
+  resourceTag.subscribe((resTag) => {
+    if (resTag.value.length > 0 && resTag.dirty) {
+      const resourceName = resTag.value.substring(
+        resTag.value.lastIndexOf("/") + 1,
       );
       if (resourceName === "") {
         resourceFolder.set("");
         resourceIndex.set("");
-      } else if (!tagExists($tagsStore, prjTag.value)) {
+      } else if (!tagExists($tagsStore, resTag.value)) {
         resourceFolder.set(resourceName);
         resourceIndex.set(`${resourceName}.README.md`);
+        if ($plugin) {
+          if (resTag.value.startsWith($plugin.settings.para.resources.prefix)) {
+            resourceFolder.set(
+              resTag.value
+                .replace(/[ /]/g, "-")
+                .substring($plugin.settings.para.areas.prefix.length),
+            );
+            resourceIndex.set(`${resourceName}.README.md`);
+          } else {
+            resourceFolder.set(resTag.value.replace(/[ /]/g, "-"));
+            resourceIndex.set(`${resourceName}.README.md`);
+          }
+        }
       }
     }
   });
-
-  const handleShouldOpen = (inputValue: string, selected: string) => {
-    // const prjTag = get(resourceTag);
-    let open = true;
-
-    const tag = inputValue.split("/");
-    // console.log(tag);
-    tag.forEach((_, index) => {
-      // console.log(
-      //   index,
-      //   value,
-      //   selected,
-      //   tag.slice(0, index + 1).join("/"),
-      //   tag.slice(0, index + 1).join("/") === selected,
-      // );
-      if (tag.slice(0, index + 1).join("/") === selected) {
-        open = false;
-        return;
-      }
-    });
-    // if (inputValue.length < selected.length) {
-    //   open;
-    // }
-
-    return open;
-  };
 
   const isLoading = writable<boolean>(false);
 
@@ -88,11 +120,20 @@
       para_tag: "",
       entry_file: "",
       folder_path: "",
-      related_templates: [],
     };
     if (formData["resource_tag"]) {
       // TODO: check that the resource tag doesn't exist
-      data.para_tag = formData["resource_tag"];
+      if (
+        $plugin &&
+        formData["resource_tag"].startsWith(
+          $plugin.settings.para.resources.prefix,
+        )
+      ) {
+        data.para_tag = formData["resource_tag"];
+      } else if ($plugin) {
+        data.para_tag =
+          $plugin.settings.para.resources.prefix + formData["resource_tag"];
+      }
     }
 
     if (formData["resource_folder"]) {
@@ -119,8 +160,25 @@
       data.folder_path !== ""
     ) {
       console.log(data);
-      await createPARAFile(data, brainOS.app, brainOS.settings, RESOURCE);
+      const file = await createPARAFile(
+        data,
+        brainOS.app,
+        brainOS.settings,
+        RESOURCE,
+      );
       createResourceForm.reset();
+
+      resourceStore.loadResourceEntires();
+      if ($ResourceEntryStore) {
+        ResourceEntryStore.set(
+          resourceStore.getResourceByTag($ResourceEntryStore.tag),
+        );
+        console.log($ResourceEntryStore);
+      }
+
+      if (file instanceof TFile) {
+        brainOS.app.workspace.getLeaf().openFile(file);
+      }
     } else {
       // TODO: display error indicating that information added is not correct
     }
@@ -152,7 +210,6 @@
     title={"Resource Templates"}
     placeholder={"fiction-books.md"}
     inputField={resourceTemplates}
-    error={$createResourceForm.hasError("resource_templates.required")}
   />
   <button
     type="button"

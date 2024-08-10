@@ -4,18 +4,132 @@ import { Component, MarkdownRenderer, Notice, TFile, moment } from "obsidian";
 import { I18N_MAP } from "../i18n";
 import { ERROR_MESSAGE } from "../constants";
 import type { BrainSettings } from "../types";
+import { isArrayOfStrings } from ".";
 // import { Tag, Replacement } from "./tag";
 
 export function trimFile(file: TFile): string {
   if (!file) return "";
-  return file.extension === "md" ? file.path.slice(0, -3) : file.path;
+  return file.extension ? file.path.slice(0, -1 * (file.extension.length + 1)) : file.path
+  // return file.extension === "md" ? file.path.slice(0, -3) : file.path;
+}
+
+export function getRelativePath(folderPath: string, filePath: string) {
+  // Ensure both paths are normalized (remove any trailing slashes)
+  folderPath = folderPath.replace(/\/+$/, '');
+  filePath = filePath.replace(/\/+$/, '');
+
+  // Check if filePath starts with folderPath
+  if (filePath.startsWith(folderPath)) {
+    // Remove the folderPath part from filePath
+    return filePath.slice(folderPath.length + 1); // +1 to remove the slash after folderPath
+  } else {
+    // If filePath is not within folderPath, return the full filePath
+    return filePath;
+  }
 }
 
 
+export const getPARATagsByFolder = (
+  app: App,
+  dir: string
+) => {
+
+  const locale = window.moment().locale()
+
+  if (!app) {
+    // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
+    new Notice(
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_APP_EXIST`],
+    );
+    return [];
+  }
+
+  if (dir === "") {
+
+    // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
+    new Notice(
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_DIR_EXIST`],
+    );
+    return [];
+  }
+
+  const folder = app.vault.getAbstractFileByPath(dir);
+
+  if (folder instanceof TFolder) {
+
+    // DFS for all PARA in the PARA folder specified in the dir
+    const stack = [folder]
+    const visited = new Set<TAbstractFile>()
+    const result: TAbstractFile[] = []
+
+    while (stack.length > 0) {
+      const vertex = stack.pop()
+
+      if (vertex !== undefined) {
+        if (!visited.has(vertex)) {
+          visited.add(vertex)
+
+
+          if (vertex.children.length > 0) {
+            const TemplateFile = vertex.children.sort().filter((file) => {
+              if (file instanceof TFile) {
+
+                if (file.path.match(/(.*\.)README\.md/)) {
+                  return true;
+                }
+              }
+            });
+            if (TemplateFile) {
+              result.push(...TemplateFile)
+            }
+
+          }
+          for (const neighbor of vertex.children.sort().filter((file) => file instanceof TFolder)) {
+            stack.push(neighbor as TFolder);
+          }
+        }
+      }
+    }
+
+    // console.log(result)
+    if (result.length === 0) {
+      new Notice(
+        I18N_MAP[locale][`${ERROR_MESSAGE}NO_PARA_ENTRIES`] + dir,
+      );
+
+      return []
+    }
+
+    const tags: string[] = result.map((file) => {
+      if (file instanceof TFile) {
+
+        const { frontmatter } = app.metadataCache.getFileCache(file) || {
+          frontmatter: {},
+        };
+        if (frontmatter?.tags) {
+
+          return frontmatter.tags[0]
+        }
+      }
+    })
+
+    if (tags.length === 0) {
+
+      new Notice(
+        I18N_MAP[locale][`${ERROR_MESSAGE}NO_TAGS_EXIST`],
+      );
+
+      return []
+    }
+
+    return tags
 
 
 
-export const findTemplateFiles = async (
+  }
+}
+
+export const findTemplateFiles = (
   app: App,
   dir: string,
 ) => {
@@ -25,7 +139,7 @@ export const findTemplateFiles = async (
   if (!app) {
     // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
     new Notice(
-      I18N_MAP[locale][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`],
+      I18N_MAP[locale][`${ERROR_MESSAGE}NO_APP_EXIST`],
     );
     return [];
   }
@@ -35,7 +149,7 @@ export const findTemplateFiles = async (
 
   const folder = app.vault.getAbstractFileByPath(dir);
 
-  console.log(folder)
+  // console.log(folder)
 
   if (folder instanceof TFolder) {
 
@@ -70,7 +184,7 @@ export const findTemplateFiles = async (
       }
     }
 
-    console.log(result)
+    // console.log(result)
     if (result.length === 0) {
       new Notice(
         I18N_MAP[locale][`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`],
@@ -189,15 +303,15 @@ export async function createFile(
     templateFile: string;
     folder: string;
     file: string;
-    tag?: string;
     append?: string;
+    metadata?: { tags: string[] } & Record<string, string | number | string[]>
   },
 ) {
   if (!app) {
     return;
   }
 
-  const { templateFile, folder, file, tag, locale } = options;
+  const { templateFile, folder, file, locale, metadata } = options;
   const templateTFile = app.vault.getAbstractFileByPath(templateFile);
 
   if (!templateTFile) {
@@ -211,7 +325,6 @@ export async function createFile(
 
 
     if (options.append) {
-      console.log(options.append)
       templateContent = templateContent + "\n\n---\n" + options.append
     }
     if (!folder || !file) {
@@ -221,6 +334,10 @@ export async function createFile(
     const tFile = app.vault.getAbstractFileByPath(file);
 
     if (tFile && tFile instanceof TFile) {
+      if (metadata) {
+        await processFrontmatter(app, metadata, tFile)
+      }
+
       return await app.workspace.getLeaf().openFile(tFile);
     }
 
@@ -230,16 +347,90 @@ export async function createFile(
 
     const fileCreated = await app.vault.create(file, templateContent);
 
-    await app.fileManager.processFrontMatter(fileCreated, (frontMatter) => {
-      if (!tag) {
-        return;
-      }
+    if (metadata) {
 
-      frontMatter.tags = frontMatter.tags || [];
-      frontMatter.tags.push(tag.replace(/^#/, ""));
-    });
+      // TODO: see if there is a way to add the frontmatter before creating the file because the store is broken now
+      // - when created the file does not contain the metadata
+      // - the entry store retrieves it with only the parent (folder) and the README, no frontmatter
+      // - see if its possible to add as text? (highly advise against that tho)
+      await app.fileManager.processFrontMatter(fileCreated, (frontMatter) => {
+        if (metadata) {
+          for (const metadata_key in metadata) {
+            if (metadata.hasOwnProperty(metadata_key)) {
+              const metadata_value = metadata[metadata_key]
+              if (isArrayOfStrings(metadata_value)) {
+                if (frontMatter.hasOwnProperty(metadata_key)) {
+                  if (metadata_key === 'tags') {
 
+                    frontMatter[metadata_key].push(...metadata_value)
+                  } else {
+
+                    frontMatter[metadata_key] = [metadata_value]
+
+                  }
+                } else {
+                  frontMatter[metadata_key] = metadata_value
+                }
+
+              } else if (typeof metadata_value === 'string' || typeof metadata_value === 'number') {
+                frontMatter[metadata_key] = metadata_value
+              }
+            }
+
+          }
+        }
+
+
+        // frontMatter.tags = frontMatter.tags || [];
+        // frontMatter.tags.push(tag.replace(/^#/, ""));
+      });
+
+    }
     // await sleep(30); // 等待被索引，否则读取不到 frontmatter：this.app.metadataCache.getFileCache(file)
-    await app.workspace.getLeaf().openFile(fileCreated);
+    // await app.workspace.getLeaf().openFile(fileCreated);
+    return fileCreated
   }
+}
+
+
+
+async function processFrontmatter(app: App,
+  metadata: { tags: string[] } & Record<string, string | number | string[]>,
+  file: TFile) {
+
+  // TODO: there are three types of frontmatter we should consider:
+  // - string: singular input, update behaviour: change the string itself
+  // - number: singular input, update behaviour: change the string itself
+  // - array of strings: multiple values, update behaviour is as follows:
+  //    - see similar items in both the current array and the next array (dont change the similar)
+  //    - if items in the next array don't exist in the current, add it
+  await app.fileManager.processFrontMatter(file, (frontMatter) => {
+    if (metadata) {
+      for (const metadata_key in metadata) {
+        if (metadata.hasOwnProperty(metadata_key)) {
+          const metadata_value = metadata[metadata_key]
+          console.log(typeof metadata_key, isArrayOfStrings(metadata_value), metadata_key)
+          if (isArrayOfStrings(metadata_value)) {
+            if (frontMatter.hasOwnProperty(metadata_key)) {
+              const new_items = metadata_value.filter((value) => !frontMatter[metadata_key].some((val: string) => val === value))
+
+              // TODO: - see if the para tag changes (find the one with the prefix) if it changed do the replacing func from tag wrangler 
+              frontMatter[metadata_key].push(...new_items)
+
+            } else {
+              frontMatter[metadata_key] = metadata_value
+            }
+
+          } else if (typeof metadata_value === 'string' || typeof metadata_value === 'number') {
+            frontMatter[metadata_key] = metadata_value
+          }
+        }
+
+      }
+    }
+
+
+    // frontMatter.tags = frontMatter.tags || [];
+    // frontMatter.tags.push(tag.replace(/^#/, ""));
+  });
 }

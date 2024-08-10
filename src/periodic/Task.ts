@@ -1,10 +1,9 @@
 // TODO: refactor this to fit the BrainOS structre and workflow
 import type { App, MarkdownPostProcessorContext } from 'obsidian';
 import type { TaskConditionType, PluginSettings, BrainSettings } from '../types';
-import type { TaskResult } from 'obsidian-dataview/lib/api/plugin-api';
 
 import { TaskStatusType } from '../types';
-import { DataviewApi, STask } from 'obsidian-dataview';
+import { DataviewApi, type STask } from 'obsidian-dataview';
 import { ERROR_MESSAGE } from '../constants';
 
 import { File, Markdown } from '../files';
@@ -146,7 +145,7 @@ TASK
 FROM (${from}) AND -"${periodicNotesPath}/Templates"
 WHERE ${where} AND file.path != "${filepath}"
 SORT status ASC
-    `)) as TaskResult;
+    `));
 
     this.dataview.taskList(tasks, false, div, component);
 
@@ -198,7 +197,11 @@ SORT status ASC
 
     const isFullfil =
       task.children
-        .map((subtask: STask) => this.filter(subtask, condition))
+        .map((subtask: any) => {
+          if ((subtask as STask).task !== undefined) {
+            return this.filter((subtask as STask), condition)
+          }
+        })
         .includes(true) ||
       (task.text.length > 1 &&
         ((date === TaskStatusType.DONE && task.completed) ||

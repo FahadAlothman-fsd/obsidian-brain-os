@@ -2,8 +2,7 @@
 import type { App, MarkdownPostProcessorContext } from 'obsidian';
 import { type BrainSettings } from '../types';
 import { Markdown } from '../files';
-import { DataArray, DataviewApi, Link, type SListEntry } from 'obsidian-dataview';
-
+import { DataviewApi, Link, DataArray, type SListEntry } from 'obsidian-dataview';
 import { File } from '../files';
 import { ERROR_MESSAGE } from '../constants';
 import { renderError } from '../utils';
@@ -57,7 +56,7 @@ export class Bullet {
     const lists: DataArray<SListEntry> = await this.dataview.pages(
       `(${from}) and -"${periodicNotesPath}/Templates"`
     ).file.lists;
-    const result: SListEntry = lists.where((L: SListEntry) => {
+    const result = lists.where((L: SListEntry) => {
       let includeTag = false;
       if (L.task || L.path === filepath) return false;
       for (const tag of tags) {
@@ -71,8 +70,8 @@ export class Bullet {
     const groupResult = result.groupBy((elem: SListEntry) => {
       return elem.link;
     });
-    const sortResult = groupResult.sort((elem: SListEntry) => elem.rows.link as Link, 'desc');
-    const tableResult = sortResult.map((k: SListEntry) => [
+    const sortResult = groupResult.sort((elem) => elem.rows.link as Link, 'desc');
+    const tableResult = sortResult.map((k) => [
       k.rows.text as string,
       k.rows.link as Link,
     ]);

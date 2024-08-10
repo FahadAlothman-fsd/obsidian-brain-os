@@ -69,9 +69,3 @@
     Date cannot be on the 1st or 15th of the month.
   </small>
 {/if}
-<p class="w-full text-left text-sm font-medium text-neutral-200">
-  You Selected:
-  {#if $value}
-    {$value}
-  {/if}
-</p>

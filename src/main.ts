@@ -1,12 +1,11 @@
-import { Plugin, setIcon } from "obsidian";
+import { Plugin, setIcon, TFolder, TFile } from "obsidian";
 import type {
   App,
   MarkdownPostProcessorContext,
   PluginManifest,
-  TFile
 } from 'obsidian';
 import "virtual:uno.css";
-import { DataviewApi, getAPI, isPluginEnabled } from 'obsidian-dataview';
+import { getAPI, isPluginEnabled, DataviewApi } from 'obsidian-dataview';
 import {
   PeriodicView, PERIODIC_VIEW,
   ParaView, PARA_VIEW,
@@ -14,22 +13,37 @@ import {
   IntegratorView, INTEGRATOR_VIEW
 } from "./views";
 import { File } from "./files";
-import { plugin, tagsStore, PARAStore, templateStore } from './stores';
+import {
+  // Plugin
+  plugin, tagsStore,
+  // Templates
+  templateStore,
+  // PARA
+  PARAStore,
+  PARATags,
+  projectStore, ProjectEntryStore,
+  areaStore, AreaEntryStore,
+  resourceStore, ResourceEntryStore,
+  archiveStore,
+} from './stores';
 import { LogLevel, type BrainSettings } from "./types";
-import { DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
+import { addNewOptionsToUserSettings, DEFAULT_SETTINGS, SettingTab } from "./SettingsTab";
 import { logMessage, renderError } from "./utils";
 import { I18N_MAP } from "./i18n";
 import { ERROR_MESSAGE } from "./constants";
 import { dataviewStore } from "./stores/pluginStore";
 import { Project, Area, Resource, Archive } from "./para";
 import { Bullet, Task, Date } from "./periodic";
+import { SelectPARAType } from "./modals";
+import { get } from "svelte/store";
+import { SelectPARAToArchiveType } from "./modals/para/ArchivePARAModal";
 
 
 
 export default class BrainOS extends Plugin {
   settings!: BrainSettings;
-  dataview: DataviewApi
-  locale: string
+  dataview!: DataviewApi;
+  locale: string;
   codeBlockViews!: Record<string, any>;
   project!: Project;
   area!: Area;
@@ -69,40 +83,49 @@ export default class BrainOS extends Plugin {
   async loadSettings() {
     const data = await this.loadData()
     this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
-    if (Object.entries(data).length !== 0) {
+
+    console.log(data)
+    if (data !== null && Object.entries(data).length !== 0) {
       this.settings = JSON.parse(JSON.stringify(data))
     }
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.para.projects, this.settings.para.projects)
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.para.resources, this.settings.para.resources)
+
+    await this.saveData(this.settings)
+
   }
 
   async saveSettings() {
     await this.saveData(this.settings);
-    this.loadStores()
-    this.loadHelpers()
-    await this.initCodeBlockViews()
-    await this.initCodeBlockViews()
-    this.loadGlobalHelpers()
-    this.setupCodeBlocks()
+    await this.loadStores()
+    this.setupBrainOSCommands()
+    // this.loadHelpers()
+    // await this.initCodeBlockViews()
+    // this.loadGlobalHelpers()
+    // this.setupCodeBlocks()
 
   }
 
   async onload() {
+    await this.loadSettings();
+
+    this.loadHelpers()
+    await this.initCodeBlockViews()
+    this.loadGlobalHelpers()
+    this.setupCodeBlocks()
+
+    await this.setupBrainOSViews()
+
     this.app.workspace.onLayoutReady(async () => {
 
-      await this.loadSettings();
-      this.loadStores()
+      this.setupBrainOSEvents()
 
+      await this.loadStores()
 
 
       // this.plugins.getPlugin("nldates-obsidian")
       // console.log(this.app.plugins.enabledPlugin.has('para-periodic'))
-      await this.setupBrainOSViews()
-      this.loadHelpers()
-      await this.initCodeBlockViews()
-
-      this.loadGlobalHelpers()
-
-      this.setupCodeBlocks()
-
+      this.setupBrainOSCommands()
       this.addSettingTab(new SettingTab(this.app, this));
 
     })
@@ -111,35 +134,160 @@ export default class BrainOS extends Plugin {
   onunload() {
     console.log("unloading plugin");
   }
-  loadStores() {
+
+  async loadStores() {
     plugin.set(this);
     tagsStore.reload();
     templateStore.reload()
+    PARATags.reloadPARA()
+    areaStore.loadEntries()
+    projectStore.loadEntries()
+    resourceStore.loadEntries()
+    archiveStore.loadEntries()
+    archiveStore.subscribe((val) => console.log(val))
+  }
+
+
+  setupBrainOSEvents() {
+
+    if (this.settings.para.usePARANotes) {
+      this.app.workspace.on('file-open', (file) => {
+        if (file?.path.contains(".README.md")) {
+          if (file.path.contains(this.settings.para.projects.folder)) {
+            console.log('in projects README')
+            ProjectEntryStore.set(projectStore.getEntryByTFile(file))
+          } else if (file.path.contains(this.settings.para.areas.folder)) {
+            console.log('in areas README')
+            AreaEntryStore.set(areaStore.getEntryByTFile(file))
+          } else if (file.path.contains(this.settings.para.resources.folder)) {
+            console.log('in resources README')
+            ResourceEntryStore.set(resourceStore.getEntryByTFile(file))
+          } else if (file.path.contains(this.settings.para.archives.folder)) {
+            console.log('in archive README')
+          }
+        } else if (get(ProjectEntryStore)) {
+          ProjectEntryStore.set(undefined)
+        } else if (get(AreaEntryStore)) {
+          AreaEntryStore.set(undefined)
+        } else if (get(ResourceEntryStore)) {
+          ResourceEntryStore.set(undefined)
+        }
+
+      })
+
+      this.app.vault.on('create', (file) => {
+        if (file instanceof TFolder) {
+          console.log(file)
+        }
+      })
+
+      // this.app.vault.on('modify', (file) => {
+      //   console.log(file)
+      //   if (file instanceof TFile) {
+      //     if (file.path.contains(".README.md")) {
+      //       if (file.path.contains(this.settings.para.projects.folder)) {
+      //         console.log('in projects README')
+      //         console.log(projectStore.getProjectByTFile(file))
+      //         ProjectEntryStore.set(projectStore.getProjectByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.areas.folder)) {
+      //         console.log('in areas README')
+      //         AreaEntryStore.set(areaStore.getAreaByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.resources.folder)) {
+      //         console.log('in resources README')
+      //         ResourceEntryStore.set(resourceStore.getResourceByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.archives.folder)) {
+      //         console.log('in archive README')
+      //       }
+      //     }
+      //   }
+      // })
+
+      // this.app.vault.on('delete', file => {
+      //   if (file instanceof TFile) {
+      //     if (file.path.contains(".README.md")) {
+      //       if (file.path.contains(this.settings.para.projects.folder)) {
+      //         console.log('in projects README')
+      //         console.log(projectStore.getProjectByTFile(file))
+      //         ProjectEntryStore.set(projectStore.getProjectByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.areas.folder)) {
+      //         console.log('in areas README')
+      //         AreaEntryStore.set(areaStore.getAreaByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.resources.folder)) {
+      //         console.log('in resources README')
+      //         ResourceEntryStore.set(resourceStore.getResourceByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.archives.folder)) {
+      //         console.log('in archive README')
+      //       }
+      //     }
+      //   }
+      // })
+
+      // this.app.vault.on('rename', file => {
+      //   if (file instanceof TFile) {
+      //     if (file.path.contains(".README.md")) {
+      //       if (file.path.contains(this.settings.para.projects.folder)) {
+      //         console.log('in projects README')
+      //         console.log(projectStore.getProjectByTFile(file))
+      //         ProjectEntryStore.set(projectStore.getProjectByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.areas.folder)) {
+      //         console.log('in areas README')
+      //         AreaEntryStore.set(areaStore.getAreaByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.resources.folder)) {
+      //         console.log('in resources README')
+      //         ResourceEntryStore.set(resourceStore.getResourceByTFile(file))
+      //       } else if (file.path.contains(this.settings.para.archives.folder)) {
+      //         console.log('in archive README')
+      //       }
+      //     }
+      //   }
+      // })
+
+
+    }
   }
 
   async setupBrainOSViews() {
 
-    this.registerView(PARA_VIEW, (leaf) => new ParaView(leaf));
-    this.registerView(PERIODIC_VIEW, (leaf) => new PeriodicView(leaf));
-    this.registerView(INTEGRATOR_VIEW, (leaf) => new IntegratorView(leaf));
+
+
+    if (this.settings.para.usePARANotes) {
+      this.registerView(PARA_VIEW, (leaf) => new ParaView(leaf));
+      this.addRibbonIcon("infinity", "BOS: PARA view", () => {
+        this.activateParaView();
+      });
+    }
+
+    if (this.settings.periodic.usePeriodicNotes) {
+      this.registerView(PERIODIC_VIEW, (leaf) => new PeriodicView(leaf));
+
+      this.addRibbonIcon("calendar-clock", "BOS: Periodic view", () => {
+        this.activatePeriodicView();
+      });
+    }
+
     this.registerView(MEDIA_CONSUMPTION_VIEW, (leaf) => new MediaConsumptionView(leaf));
-
-
-    this.addRibbonIcon("infinity", "BOS: PARA view", () => {
-      this.activateParaView();
-    });
-
-    this.addRibbonIcon("calendar-clock", "BOS: Periodic view", () => {
-      this.activatePeriodicView();
-    });
 
     this.addRibbonIcon("book-marked", "BOS: Media view", () => {
       this.activateMediaView();
     });
 
+
+    this.registerView(INTEGRATOR_VIEW, (leaf) => new IntegratorView(leaf));
+
     this.addRibbonIcon("shapes", "BOS: Integrator view", () => {
       this.activateIntegratorView();
     });
+
+
+  }
+
+
+  setupBrainOSCommands() {
+
+    if (this.settings.para.usePARANotes) {
+      this.activatePARACommands()
+
+    }
 
 
   }
@@ -240,6 +388,7 @@ export default class BrainOS extends Plugin {
   }
 
   async initCodeBlockViews() {
+    // TODO: fix this to correspond with the new workflow and structure of this plugin
     this.codeBlockViews = {
       // views by time -> time context -> periodic notes
       ProjectListByTime: this.project.listByTime,
@@ -261,6 +410,30 @@ export default class BrainOS extends Plugin {
       ArchiveListByFolder: this.archive.listByFolder,
     };
   }
+
+
+  // Commands
+  activatePARACommands() {
+
+    this.addCommand({
+      id: "brainos-create-para-note",
+      name: "PARA > Create PARA Note",
+      callback: () => {
+        new SelectPARAType(this.app).open()
+      },
+    })
+
+
+    this.addCommand({
+      id: "brainos-archive-para-entry",
+      name: "PARA > Archive PARA Entry",
+      callback: () => {
+        new SelectPARAToArchiveType(this.app).open()
+      },
+    })
+
+  }
+
 
   // LEAF VIEW 
   async activatePeriodicView() {

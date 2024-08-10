@@ -9,20 +9,26 @@
   import { templateStore, type templateType, plugin } from "../../stores";
   import { getRelativePath } from "../../utils";
   import type { field } from "svelte-forms";
+  import type { TFile } from "obsidian";
 
   export let title = "label";
   export let placeholder = "placeholder";
-  export let error: boolean;
-  export let inputField: ReturnType<typeof field<templateType[]>>;
+  export let inputField: ReturnType<typeof field<TFile[]>>;
 
-  const initialTags = $inputField.value || [];
+  const initialTags =
+    $inputField.value
+      .map((val) => {
+        if ($plugin) {
+          return getRelativePath($plugin.settings.otherTemplates, val.path);
+        }
+      })
+      .filter((val) => val !== undefined) || [];
 
   const {
     elements: { root, tag, deleteTrigger, edit },
     states: { tags },
     helpers: { addTag },
   } = createTagsInput({
-    // @ts-ignore for some reason the type doesn't work
     defaultTags: initialTags,
     unique: true,
     add(tag) {
@@ -60,7 +66,7 @@
     elements: { menu, input, option },
     states: { open, inputValue, touchedInput, selected },
     helpers: { isSelected },
-  } = createCombobox<templateType>({
+  } = createCombobox<TFile>({
     forceVisible: true,
   });
 
@@ -83,7 +89,9 @@
         const normalizedInput = $inputValue.toLowerCase();
         return name.toLowerCase().includes(normalizedInput);
       })
-    : $templateStore;
+    : $templateStore.filter(({ name }) => {
+        return !$tags.some((tag) => tag.value === name);
+      });
 </script>
 
 <div class="flex flex-col items-start justify-center gap-2 min-w-full">

@@ -1,29 +1,49 @@
 import { PluginSettingTab, Setting, debounce, normalizePath } from 'obsidian';
-import type { App } from 'obsidian';
+import type { App, ButtonComponent } from 'obsidian';
 import type { PluginSettings, BrainSettings } from './types';
 import BrainOS from './main'
-import { FileSuggest, FolderSuggest } from './utils/suggesters';
+import { FileSuggest, FolderSuggest, StatusSuggest } from './utils/suggesters';
+import { StatusConfiguration, StatusType } from './utils';
+import { PROJECT, RESOURCE } from './constants';
+import { CustomStatusModal } from './modals/CustomStatusModal';
 
-
+export function addNewOptionsToUserSettings<KeysAndValues>(defaultValues: KeysAndValues, userValues: KeysAndValues) {
+  for (const flag in defaultValues) {
+    if (userValues[flag] === undefined) {
+      userValues[flag] = defaultValues[flag];
+    }
+  }
+}
 export const DEFAULT_SETTINGS: BrainSettings = {
   otherTemplates: "99 - Meta/00 - Templates/Other Templates",
-  otherTemplatesHeader: "Related Templates",
+  other_templates_frontmatter: "related_templates",
   para: {
     usePARANotes: true,
     projects: {
       folder: "01 - Projects",
       template: "99 - Meta/00 - Templates/PARA/project",
-      prefix: "p-"
+      prefix: "p-",
+      status_frontmatter: "status",
+      deadline_frontmatter: "deadline",
+      priority_frontmatter: "priority",
+      related_areas_frontmatter: "related_areas",
+      related_templates_frontmatter: "related_templates",
+      project_statuses: [],
     },
     areas: {
       folder: "02 - Areas",
       template: "99 - Meta/00 - Templates/PARA/area",
-      prefix: "a-"
+      prefix: "a-",
+      priority_frontmatter: "priority",
+      related_templates_frontmatter: "related_templates",
     },
     resources: {
       folder: "03 - Resources",
       template: "99 - Meta/00 - Templates/PARA/resources",
-      prefix: "r-"
+      prefix: "r-",
+      related_templates_frontmatter: "related_templates",
+      resource_statuses: [],
+      status_frontmatter: "status",
     },
     archives: {
       folder: "06 - Archives",
@@ -115,15 +135,15 @@ export class SettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Other Templates Header:')
-      .setDesc('Where the Other templates module is in a PARA README file')
+      .setName('Other Templates Key:')
+      .setDesc('the key that will be used to track the related_templates in the frontmatter')
       .addText((text) =>
         text
-          .setPlaceholder(DEFAULT_SETTINGS.otherTemplatesHeader)
-          .setValue(this.plugin.settings.otherTemplatesHeader)
+          .setPlaceholder(DEFAULT_SETTINGS.other_templates_frontmatter)
+          .setValue(this.plugin.settings.other_templates_frontmatter)
           .onChange(
             debounce(async (value) => {
-              this.plugin.settings.otherTemplatesHeader = value;
+              this.plugin.settings.other_templates_frontmatter = value;
               await this.plugin.saveSettings();
             }, 500)
           )
@@ -345,17 +365,152 @@ export class SettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('Project Prefix')
-      .setDesc('This will be used to differentiate project tags from other tags in your vault')
+      .setName('Project Deadline key')
+      .setDesc('the key that will be used to track the deadline of the project in the frontmatter')
       .addText((text) =>
         text
-          .setPlaceholder(DEFAULT_SETTINGS.para.projects.prefix)
-          .setValue(this.plugin.settings.para.projects.prefix)
+          .setPlaceholder(DEFAULT_SETTINGS.para.projects.deadline_frontmatter)
+          .setValue(this.plugin.settings.para.projects.deadline_frontmatter)
           .onChange(
             debounce(async (value) => {
-              this.plugin.settings.para.projects.prefix = value;
+              this.plugin.settings.para.projects.deadline_frontmatter = value;
               await this.plugin.saveSettings();
             }, 500)))
+
+    new Setting(containerEl)
+      .setName('Project Related Areas key')
+      .setDesc('the key that will be used to track the related areas of the project in the frontmatter')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.projects.related_areas_frontmatter)
+          .setValue(this.plugin.settings.para.projects.related_areas_frontmatter)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.projects.related_areas_frontmatter = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
+    new Setting(containerEl)
+      .setName('Project Priority key')
+      .setDesc('the key that will be used to track the priority of the project in the frontmatter')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.projects.priority_frontmatter)
+          .setValue(this.plugin.settings.para.projects.priority_frontmatter)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.projects.priority_frontmatter = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
+    new Setting(containerEl)
+      .setName('Project Status key')
+      .setDesc('the key that will be used to track the status of the project in the frontmatter')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.projects.status_frontmatter)
+          .setValue(this.plugin.settings.para.projects.status_frontmatter)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.projects.status_frontmatter = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
+    new Setting(containerEl)
+      .setName("Add new project status")
+      .setDesc("these statuses will be used in lifecycle of the project")
+      .addButton((button: ButtonComponent) => {
+        button
+          .setTooltip("Add additional folder template")
+          .setButtonText("+")
+          .setCta()
+          .onClick(async () => {
+            const modal = new CustomStatusModal(this.plugin, new StatusConfiguration("", StatusType.NEW), PROJECT, `New ${PROJECT.toLowerCase()} status`)
+
+            modal.onClose = async () => {
+              if (modal.saved) {
+
+                const newStatus = modal.statusConfiguration()
+                this.plugin.settings.para.projects.project_statuses.push({
+                  id: `${newStatus.name}-${newStatus.type}`,
+                  name: newStatus.name,
+                  type: newStatus.type,
+                  default: newStatus.default_status,
+                })
+
+                this.plugin.saveSettings();
+                this.display();
+              }
+
+            };
+
+            modal.open();
+          });
+      });
+
+    this.plugin.settings.para.projects.project_statuses.forEach((project_status, index) => {
+      const infoDiv = containerEl.createDiv()
+      infoDiv.addClasses(["flex", "flex-row", "gap-4", "items-center"])
+      const name = infoDiv.createSpan()
+      name.setText(`NAME: ${project_status.name}`)
+      name.addClasses(["text-magnum-700"])
+      const type = infoDiv.createSpan()
+      type.setText(`TYPE: ${project_status.type}`)
+      type.addClasses(["text-magnum-900"])
+      if (project_status.default) {
+        // TODO: see if its possible to create a chip in the settings tab
+        // const div = infoDiv.createDiv()
+        // div.addClasses(["relative", "grid", "select-none", "items-center",
+        //   "whitespace-nowrap", "rounded-lg", "bg-magnum-900", "py-1.5", "px-3",
+        //   "text-xs", "font-bold", "uppercase", "text-white"])
+        const type = infoDiv.createSpan()
+        type.setText(`DEFAULT`)
+        type.addClasses(["text-magnum-700", "rounded-lg", "bg-gray-200", "py-2", "px-3", "items-center", "text-sm"])
+
+      }
+      const info = new DocumentFragment()
+      info.append(infoDiv)
+      const status = new Setting(containerEl)
+        .setName(info)
+        .setDesc(`ID: ${project_status.name}-${project_status.type}`)
+        .addExtraButton((cb) => {
+          cb.setIcon("pencil")
+            .setTooltip("Modify")
+            .onClick(() => {
+              const modal = new CustomStatusModal(this.plugin, new StatusConfiguration(project_status.name, project_status.type, project_status.default), PROJECT, `${PROJECT.toLowerCase()} status`)
+
+              modal.onClose = async () => {
+                if (modal.saved) {
+
+                  const newStatus = modal.statusConfiguration()
+
+                  this.plugin.settings.para.projects.project_statuses[index].type = newStatus.type;
+                  this.plugin.settings.para.projects.project_statuses[index].name = newStatus.name;
+                  this.plugin.settings.para.projects.project_statuses[index].id = `${newStatus.name}-${newStatus.type}`
+                  this.plugin.settings.para.projects.project_statuses[index].default = newStatus.default_status
+                  this.plugin.saveSettings();
+                  this.display();
+                }
+
+              };
+
+              modal.open();
+            });
+        })
+        .addExtraButton((cb) => {
+          cb.setIcon("cross")
+            .setTooltip("Delete")
+            .onClick(() => {
+              this.plugin.settings.para.projects.project_statuses.splice(
+                index,
+                1
+              );
+              this.plugin.saveSettings();
+              this.display();
+            });
+        });
+    })
+
 
     containerEl.createEl('h2', { text: 'Area Settings' });
     new Setting(containerEl)
@@ -448,6 +603,111 @@ export class SettingTab extends PluginSettingTab {
               this.plugin.settings.para.resources.prefix = value;
               await this.plugin.saveSettings();
             }, 500)))
+
+
+    new Setting(containerEl)
+      .setName('Resource Status key')
+      .setDesc('the key that will be used to track the status of a given resource of a certian resource type in the frontmatter')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.resources.status_frontmatter)
+          .setValue(this.plugin.settings.para.resources.status_frontmatter)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.resources.status_frontmatter = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
+    new Setting(containerEl)
+      .setName("Add new Resource status")
+      .setDesc("these statuses will be used in lifecycle of a resource of a certain resource type")
+      .addButton((button: ButtonComponent) => {
+        button
+          .setTooltip("Add additional resource status")
+          .setButtonText("+")
+          .setCta()
+          .onClick(async () => {
+            const modal = new CustomStatusModal(this.plugin, new StatusConfiguration("", StatusType.NEW), RESOURCE, `New ${RESOURCE.toLowerCase()} status`)
+
+            modal.onClose = async () => {
+              if (modal.saved) {
+
+                const newStatus = modal.statusConfiguration()
+                this.plugin.settings.para.resources.resource_statuses.push({
+                  id: `${newStatus.name}-${newStatus.type}`,
+                  name: newStatus.name,
+                  type: newStatus.type,
+                  default: newStatus.default_status,
+                })
+
+                this.plugin.saveSettings();
+                this.display();
+              }
+
+            };
+
+            modal.open();
+          });
+      });
+
+    this.plugin.settings.para.resources.resource_statuses.forEach((resource_status, index) => {
+      const infoDiv = containerEl.createDiv()
+      infoDiv.addClasses(["flex", "flex-row", "gap-4", "items-center"])
+      const name = infoDiv.createSpan()
+      name.setText(`NAME: ${resource_status.name}`)
+      name.addClasses(["text-magnum-700"])
+      const type = infoDiv.createSpan()
+      type.setText(`TYPE: ${resource_status.type}`)
+      type.addClasses(["text-magnum-900"])
+      if (resource_status.default) {
+        const type = infoDiv.createSpan()
+        type.setText(`DEFAULT`)
+        type.addClasses(["text-magnum-700", "rounded-lg", "bg-gray-200", "py-2", "px-3", "items-center", "text-sm"])
+      }
+      const info = new DocumentFragment()
+      info.append(infoDiv)
+      new Setting(containerEl)
+        .setName(info)
+        .setDesc(`ID: ${resource_status.name}-${resource_status.type}`)
+        .addExtraButton((cb) => {
+          cb.setIcon("pencil")
+            .setTooltip("Modify")
+            .onClick(() => {
+              const modal = new CustomStatusModal(this.plugin, new StatusConfiguration(resource_status.name,
+                resource_status.type, resource_status.default), RESOURCE, `New ${RESOURCE.toLowerCase()} status`)
+
+              modal.onClose = async () => {
+                if (modal.saved) {
+
+                  const newStatus = modal.statusConfiguration()
+
+                  this.plugin.settings.para.resources.resource_statuses[index].type = newStatus.type;
+                  this.plugin.settings.para.resources.resource_statuses[index].name = newStatus.name;
+                  this.plugin.settings.para.resources.resource_statuses[index].id = `${newStatus.name}-${newStatus.type}`
+                  this.plugin.settings.para.resources.resource_statuses[index].default = newStatus.default_status
+                  this.plugin.saveSettings();
+                  this.display();
+                }
+
+              };
+
+              modal.open();
+            });
+        })
+        .addExtraButton((cb) => {
+          cb.setIcon("cross")
+            .setTooltip("Delete")
+            .onClick(() => {
+              this.plugin.settings.para.resources.resource_statuses.splice(
+                index,
+                1
+              );
+              this.plugin.saveSettings();
+              this.display();
+            });
+        });
+    });
+
 
     containerEl.createEl('h2', { text: 'Archive Settings' });
     new Setting(containerEl)

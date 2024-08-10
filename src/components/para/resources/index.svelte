@@ -2,18 +2,35 @@
   import Accordian from "../../UI/Accordian.svelte";
   import CreateResource from "./CreateResource.svelte";
   import ListResources from "./ListResources.svelte";
+  import { ResourceEntryStore } from "../../../stores";
 
   const sections = [
     {
       id: "create-resource",
       title: "Create Resource",
       component: CreateResource,
+      props: {},
     },
     // TODO: add an edit resource that uses the same component as create but fills in the info
     // it opens only if one of the two following situations occur:
     // when; a resource README is open, the para view is open, the resource tab is active
-    { id: "list-resources", title: "Resources", component: ListResources },
+    {
+      id: "list-resources",
+      title: "Resources",
+      component: ListResources,
+      props: {},
+    },
   ];
+
+  $: if ($ResourceEntryStore) {
+    sections[0]["id"] = "edit-resource";
+    sections[0]["title"] = "Edit Resource";
+    sections[0]["props"] = { resource: $ResourceEntryStore };
+  } else {
+    sections[0]["id"] = "create-resource";
+    sections[0]["title"] = "Create Resource";
+    sections[0]["props"] = {};
+  }
 </script>
 
 <section class="space-y-2">

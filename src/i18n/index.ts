@@ -25,9 +25,8 @@ const EN = {
   [`${FOLDER}Required`]: 'The folder is required',
   [`${INDEX}Required`]: 'The index file name is required',
 
-  [`${MESSAGE}START_SYNC_USEMEMOS`]: 'Start sync usememos',
-  [`${MESSAGE}END_SYNC_USEMEMOS`]: 'End sync usememos',
-
+  [`${ERROR_MESSAGE}NO_APP_EXIST`]: 'The app variable does not exist',
+  [`${ERROR_MESSAGE}NO_DIR_EXIST`]: 'The directory was not passed',
   [`${ERROR_MESSAGE}NO_FRONT_MATTER_TAG`]:
     'Please add the tags field for properties !',
   [`${ERROR_MESSAGE}NO_DATAVIEW_INSTALL`]:
@@ -40,10 +39,10 @@ const EN = {
     'There is no Index file exists(README.md/xxx.README.md/the same as the name of the folder it resides in)',
   [`${ERROR_MESSAGE}NO_TEMPLATE_EXIST`]: 'There is no template file exist',
   [`${ERROR_MESSAGE}TAGS_MUST_INPUT`]: 'Please input tags!',
-  [`${ERROR_MESSAGE}DAILY_RECORD_FETCH_FAILED`]: 'Fetch usememos failed',
+  [`${ERROR_MESSAGE}NO_TAGS_EXIST`]: 'There are no tags in the PARA type you are looking for',
   [`${ERROR_MESSAGE}RESOURCE_FETCH_FAILED`]: 'Fetch resource failed',
-  [`${ERROR_MESSAGE}NO_DAILY_RECORD_HEADER`]:
-    'Please set which header the usememos need insert to in LifeOS plugin',
+  [`${ERROR_MESSAGE}NO_PARA_ENTRIES`]:
+    'There are no entries for the PARA type you are trying to access in the dir: ',
   [`${ERROR_MESSAGE}NO_DAILY_RECORD_API`]:
     'Please set daily usememos API in LifeOS plugin',
   [`${ERROR_MESSAGE}NO_DAILY_RECORD_TOKEN`]:

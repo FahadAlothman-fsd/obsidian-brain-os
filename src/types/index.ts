@@ -36,7 +36,7 @@ export interface BrainSettings {
   para: paraType
   periodic: periodicType
   otherTemplates: string
-  otherTemplatesHeader: string
+  other_templates_frontmatter: string
 }
 
 

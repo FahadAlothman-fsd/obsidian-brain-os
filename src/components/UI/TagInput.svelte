@@ -4,70 +4,121 @@
     createTagsInput,
     melt,
     type ComboboxOptionProps,
+    type Tag,
   } from "@melt-ui/svelte";
   import { fly } from "svelte/transition";
-  import { tagsStore } from "../../stores";
+  import { areaStore, plugin } from "../../stores";
   import type { field } from "svelte-forms";
 
   export let title = "label";
   export let placeholder = "placeholder";
-  export let error: boolean;
-  export let inputField: ReturnType<typeof field<Tag[]>>;
+  export let inputField: ReturnType<typeof field<relatedAreaType[]>>;
+  export let prohibited_tag: string;
 
-  type Tag = {
-    value: string;
-    count: number;
+  type relatedAreaType = {
+    tag: string;
+    priority: string;
   };
-  const initialTags = $inputField.value || [];
+  console.log($inputField);
+  const initialTags =
+    $inputField.value.map((val) => ({ id: val.tag, value: val.tag })) || [];
 
   const {
     elements: { root, tag, deleteTrigger, edit },
     states: { tags },
     helpers: { addTag },
   } = createTagsInput({
-    // @ts-ignore for some reason the type doesn't work
     defaultTags: initialTags,
     unique: true,
     add(tag) {
-      return { id: tag, value: tag };
+      let added_tag: Tag = {
+        id: tag,
+        value: tag,
+      };
+      if ($plugin) {
+        const area = areaStore.getAreaByTag(tag);
+        if (area) {
+          $inputField.value.push({
+            tag: area.tag,
+            priority: area.area_priority,
+          });
+        }
+        added_tag = {
+          ...added_tag,
+          value: added_tag.id.substring(
+            $plugin.settings.para.areas.prefix.length,
+          ),
+        };
+      }
+      return added_tag;
     },
-    addOnPaste: true,
+    remove(tag) {
+      $selected = undefined;
+      if ($plugin) {
+        const area = areaStore.getAreaByTag(tag.id);
+        if (area) {
+          $inputField.value.remove({
+            tag: area.tag,
+            priority: area.area_priority,
+          });
+        }
+      }
+
+      return true;
+    },
+    addOnPaste: false,
   });
 
-  const toOption = (tag: Tag): ComboboxOptionProps<Tag> => ({
+  const toOption = (
+    tag: relatedAreaType,
+  ): ComboboxOptionProps<relatedAreaType> => ({
     value: tag,
-    label: tag.value,
+    label: tag.tag,
   });
 
   const {
     elements: { menu, input, option },
     states: { open, inputValue, touchedInput, selected },
     helpers: { isSelected },
-  } = createCombobox<Tag>({
+  } = createCombobox<relatedAreaType>({
     forceVisible: true,
   });
 
   $: if (!$open) {
-    $inputValue = "";
     if ($selected?.label) {
-      inputField.update((values) => {
-        values.value.push({
-          value: $selected.value.value,
-          count: $selected.value.count,
-        });
-        return values;
-      });
-      addTag($selected.label);
-      // $inputValue = $selected.label;
+      let added_tag: Tag = {
+        id: $selected.value.tag,
+        value: $selected.value.tag,
+      };
+      if ($plugin) {
+        added_tag = {
+          ...added_tag,
+          value: added_tag.id.substring(
+            $plugin.settings.para.areas.prefix.length,
+          ),
+        };
+      }
+      if (!$tags.some((val) => val.id === added_tag.id)) {
+        addTag($selected.value.tag);
+      }
     }
   }
 
   $: filteredTags = $touchedInput
-    ? $tagsStore.filter(({ value, count }) => {
-        const normalizedInput = $inputValue.toLowerCase();
-        return value.toLowerCase().includes(normalizedInput);
-      })
-    : $tagsStore;
+    ? $areaStore
+        .filter(({ tag }) => {
+          const normalizedInput = $inputValue.toLowerCase();
+          return tag.toLowerCase().includes(normalizedInput);
+        })
+        .map((val) => ({ tag: val.tag, priority: val.area_priority }))
+    : $areaStore
+        .filter((val) => {
+          return (
+            !$tags.some((tag) => tag.id === val.tag) &&
+            val.tag !== prohibited_tag
+          );
+        })
+        .map((val) => ({ tag: val.tag, priority: val.area_priority }));
 </script>
 
 <div class="flex flex-col items-start justify-center gap-2 min-w-full">
@@ -140,8 +191,8 @@
               </div>
             {/if}
             <div class="pl-4">
-              <span class="font-medium">{tag.value}</span>
-              <span class="block text-sm opacity-75">{tag.count}</span>
+              <span class="font-medium">{tag.tag}</span>
+              <span class="block text-sm opacity-75">{tag.priority}</span>
             </div>
           </li>
         {:else}

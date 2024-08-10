@@ -6,12 +6,12 @@ import { PluginOption, defineConfig } from "vite";
 import { preprocessMeltUI, sequence } from '@melt-ui/pp'
 
 const setOutDir = (mode: string) => {
-  switch (mode) {
-    case "development":
-      return "../testing-plugins-vault/.obsidian/plugins/obsidian-brain-os";
-    case "production":
-      return "build";
+  if (mode === "development") {
+
+    return `${__dirname}/../testing-plugins-vault/.obsidian/plugins/obsidian-brain-os`;
   }
+
+  return `${__dirname}/build`;
 };
 
 export default defineConfig(({ mode }) => {
@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
           entryFileNames: "main.js",
           assetFileNames: "styles.css",
           sourcemapBaseUrl: pathToFileURL(
-            `${__dirname}/test-vault/.obsidian/plugins/obsidian-svelte-plugin/`,
+            setOutDir(mode)
           ).toString(),
         },
         external: [

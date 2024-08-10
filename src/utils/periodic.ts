@@ -11,7 +11,7 @@ export async function createPeriodicFile(
   periodicNotesPath: string,
   templatePath: string,
   app: App
-): Promise<void> {
+): Promise<void | TFile> {
   if (!app || !periodicNotesPath) {
     return;
   }
@@ -51,12 +51,16 @@ export async function createPeriodicFile(
   // templateFile = `${periodicNotesPath}/Templates/${periodType}.md`;
   templateFile = `${templatePath}.md`;
 
-  await createFile(app, {
+  const createdFile = await createFile(app, {
     locale,
     templateFile,
     folder,
     file,
   });
+
+  if (createdFile instanceof TFile) {
+    return createdFile
+  }
 }
 
 

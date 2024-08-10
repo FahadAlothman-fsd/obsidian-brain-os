@@ -3,13 +3,36 @@
   import ScrollArea from "../../UI/ScrollArea.svelte";
   import CreateProject from "./CreateProject.svelte";
   import ListProjects from "./ListProjects.svelte";
+  import { ProjectEntryStore } from "../../../stores";
 
-  const sections = [
-    { id: "create-project", title: "Create Project", component: CreateProject },
+  let sections = [
+    {
+      id: "create-project",
+      title: "Create Project",
+      component: CreateProject,
+      props: {},
+    },
     // TODO: add an edit area that uses the same component as create but fills in the info
     // it should be only when a area README is open
-    { id: "list-projects", title: "Projects", component: ListProjects },
+    {
+      id: "list-projects",
+      title: "Projects",
+      component: ListProjects,
+      props: {},
+    },
   ];
+
+  $: if ($ProjectEntryStore) {
+    sections[0]["id"] = "edit-project";
+    sections[0]["title"] = "Edit Project";
+    sections[0]["props"] = { project: $ProjectEntryStore };
+    console.log("project to edit");
+  } else {
+    sections[0]["id"] = "create-project";
+    sections[0]["title"] = "Create Project";
+    sections[0]["props"] = {};
+    console.log("create project");
+  }
 </script>
 
 <section class="space-y-2">

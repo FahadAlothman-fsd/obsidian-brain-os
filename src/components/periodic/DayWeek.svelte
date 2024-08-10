@@ -5,55 +5,62 @@
   import { field, form } from "svelte-forms";
   import { createPeriodicFile, getISOWeekNumber } from "../../utils/periodic";
   import { plugin } from "../../stores";
-  import { DAILY, WEEKLY } from "../../constants";
+  import { DAILY, ERROR_MESSAGE, WEEKLY } from "../../constants";
   import {
     getLocalTimeZone,
     today,
     startOfWeek,
     type DateValue,
   } from "@internationalized/date";
-  import { moment } from "obsidian";
-
-  const day = field("day", "");
-  const week = field("week", "");
-
-  const dayWeekForm = form(day);
+  import { moment, Notice, TFile } from "obsidian";
+  import { I18N_MAP } from "../../i18n";
 
   const {
     elements: { calendar, heading, grid, cell, prevButton, nextButton },
-    states: { months, headingValue, weekdays, value },
+    states: { months, headingValue, weekdays },
     helpers: { isDateDisabled, isDateUnavailable },
   } = createCalendar({
-    locale: window.localStorage.getItem("language") || "en",
-    // @ts-ignore
-    // defaultValue: today(getLocalTimeZone()),
+    locale: window.moment().locale(),
+    defaultValue: today(getLocalTimeZone()),
   });
 
-  $: if ($value) {
+  const handleCreateDaily = async (day: DateValue) => {
     const brainOS = get(plugin);
     // TODO: display error here indicating that the brainOS wasn't added correctly
     if (brainOS !== undefined) {
       createPeriodicFile(
-        window.moment($value.toDate(getLocalTimeZone())),
+        window.moment(day.toDate(getLocalTimeZone())),
         DAILY,
         brainOS.settings.periodic.periodicFolder,
         brainOS.settings.periodic.daily.template,
         brainOS.app,
-      );
+      ).then((file) => {
+        if (file instanceof TFile) {
+          brainOS.app.workspace.getLeaf().openFile(file);
+        }
+      });
+    } else {
+      const locale = window.moment().locale();
+
+      new Notice(I18N_MAP[locale][`${ERROR_MESSAGE}NO_APP_EXIST`]);
     }
-  }
+  };
 
   const handleCreateWeekly = async (startOfWeek: DateValue) => {
     const date = window.moment(startOfWeek, "YYYY-M-DD");
     const brainOS = get(plugin);
     if (brainOS !== undefined) {
-      await createPeriodicFile(
+      const file = await createPeriodicFile(
         date,
         WEEKLY,
         brainOS.settings.periodic.periodicFolder,
         brainOS.settings.periodic.weekly.template,
         brainOS.app,
       );
+
+      if (file instanceof TFile) {
+        await brainOS.app.workspace.getLeaf().openFile(file);
+      }
     }
   };
 </script>
@@ -132,6 +139,9 @@
                     <div
                       use:melt={$cell(date, month.value)}
                       class="flex h-6 w-6 cursor-pointer select-none items-center justify-center rounded-lg p-4 hover:bg-magnum-100 focus:ring focus:ring-magnum-400 data-[outside-visible-months]:pointer-events-none data-[outside-visible-months]:cursor-default data-[range-highlighted]:bg-magnum-200 data-[selected]:bg-magnum-300 data-[selected]:text-magnum-900 data-[disabled]:opacity-40 data-[outside-visible-months]:opacity-40 data-[outside-visible-months]:hover:bg-transparent"
+                      on:click={async () => {
+                        await handleCreateDaily(date);
+                      }}
                     >
                       {date.day}
                     </div>

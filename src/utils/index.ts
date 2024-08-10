@@ -3,10 +3,16 @@ import type { App } from "obsidian";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { createFile, findTemplateFiles } from "./files"
+import { createFile, findTemplateFiles, getPARATagsByFolder, getRelativePath } from "./files"
 import { createPeriodicFile } from "./periodic";
-import { createPARAFile, generateHeaderRegExp } from "./para";
+import { createPARAFile, generateHeaderRegExp, getParaREADMEFiles } from "./para";
 import { LogLevel, type Tag } from "../types";
+import { StatusType, StatusConfiguration, Status, StatusValidator } from "./status";
+
+
+function isArrayOfStrings(value: any): value is string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string');
+}
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,9 +56,11 @@ export function logMessage(message: string, level: LogLevel = LogLevel.info) {
 
 export {
   sleep, renderError,
-  createFile, findTemplateFiles,
+  createFile, findTemplateFiles, getPARATagsByFolder, getRelativePath,
   createPeriodicFile,
-  createPARAFile, generateHeaderRegExp,
+  createPARAFile, generateHeaderRegExp, getParaREADMEFiles,
   cn, tagExists,
+  isArrayOfStrings,
+  StatusType, StatusConfiguration, Status, StatusValidator
 }
 

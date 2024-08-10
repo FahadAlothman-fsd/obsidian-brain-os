@@ -23,15 +23,19 @@ export class FileSuggest extends AbstractInputSuggest<TFile> {
   }
 
   renderSuggestion(file: TFile, el: HTMLElement) {
-    if (file.extension == "md") {
+    if (file.extension && !file.path.contains(".excalidraw.md")) {
       el.setText(trimFile(file));
+      el.insertAdjacentHTML(
+        "beforeend",
+        `<div class="nav-file-tag" style="display:inline-block;vertical-align:middle">${file.extension}</div>`
+      );
     }
     else {
       // we don't use trimFile here as the extension isn't displayed here
-      el.setText(file.path.slice(0, -7))
+      el.setText(file.path.slice(0, -1 * (".excalidraw.md".length)))
       el.insertAdjacentHTML(
         "beforeend",
-        `<div class="nav-file-tag" style="display:inline-block;vertical-align:middle">canvas</div>`
+        `<div class="nav-file-tag" style="display:inline-block;vertical-align:middle">excalidraw</div>`
       );
     }
   }

@@ -3,7 +3,7 @@
   import ProjectsTab from "./projects/index.svelte";
   import AreasTab from "./areas/index.svelte";
   import ResourcesTab from "./resources/index.svelte";
-  import ArchivesTab from "./Archives.svelte";
+  import ArchivesTab from "./archives/index.svelte";
   import type { TabsType } from "../../types";
 
   const triggers: TabsType = [

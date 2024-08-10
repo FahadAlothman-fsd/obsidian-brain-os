@@ -9,103 +9,73 @@
   } from "@melt-ui/svelte";
   import { fly } from "svelte/transition";
   import type { field } from "svelte-forms";
-  import { onDestroy, onMount } from "svelte";
-  import { type Unsubscriber } from "svelte/store";
-  import { areaStore } from "../../stores";
-  import type { AreaEntryType } from "../../types/paraTypes";
+  import { plugin } from "../../stores";
+  import type { statusType } from "../../types/paraTypes";
 
   // TODO: make this so the parent component passes the options
   export let title = "Label";
   export let placeholder = "Placeholder";
-  export let error: boolean;
-  export let inputField: ReturnType<typeof field<string>>;
-  let area_tag: AreaEntryType | undefined;
-  export let shouldOpen: (
-    inputValue: string,
-    selected: string,
-  ) => boolean | undefined;
+  export let error: boolean = false;
+  export let inputField: ReturnType<typeof field<statusType>>;
+  let status: statusType | undefined;
 
-  const toOption = (
-    tag: AreaEntryType,
-  ): ComboboxOptionProps<{ tag: string; priority: string; name: string }> => ({
-    value: {
-      tag: tag.tag,
-      priority: tag.area_priority,
-      name: tag.README.basename.split(".")[0],
-    },
-    label: tag.tag,
+  const toOption = (status: statusType): ComboboxOptionProps<statusType> => ({
+    value: status,
+    label: status.name,
   });
 
-  let defaultSelected: CreateComboboxProps<{
-    tag: string;
-    priority: string;
-    name: string;
-  }>["defaultSelected"];
+  let defaultSelected: CreateComboboxProps<statusType>["defaultSelected"];
 
   $: if ($inputField.value) {
-    let a_tag = $inputField.value.split("/").slice(0, -1).join("/");
-    area_tag = areaStore.getAreaByTag(a_tag);
-
-    console.log(area_tag);
-    if (area_tag) {
-      defaultSelected = toOption(area_tag);
-      inputValue.set($inputField.value);
-      console.log(defaultSelected);
+    if (!$selected || ($selected && $selected.value !== $inputField.value)) {
+      console.log(
+        "in changing default and input value",
+        $selected,
+        toOption($inputField.value),
+        $selected && $selected !== toOption($inputField.value),
+      );
+      defaultSelected = toOption($inputField.value);
+      inputValue.set($inputField.value.name);
     }
   }
 
-  let unsubInputField: Unsubscriber | undefined;
-  const handleOpen: CreateComboboxProps["onOpenChange"] = ({ next }) => {
-    if (
-      typeof shouldOpen !== undefined &&
-      $selected &&
-      $selected.label &&
-      !shouldOpen($inputValue, $selected.label)
-    ) {
-      inputField.set($inputValue);
-      unsubInputField = inputValue.subscribe((val) => {
-        inputField.set(val);
-      });
-      return false;
-    }
-    if (!next) {
-      $inputValue = $selected?.label ?? "";
-      inputField.set($inputValue);
-    }
-    if (next && unsubInputField !== undefined) {
-      unsubInputField();
-      unsubInputField = undefined;
-    }
+  $: console.log($inputValue);
+  // $: if ($inputValue && $inputValue !== $inputField.value && $selected && ) {
+  //
+  // }
 
-    return next;
-  };
+  $: if (!$open) {
+    if ($selected && $selected.value !== $inputField.value) {
+      console.log(
+        "in changing field and input value",
+        $selected.value,
+        $inputField.value,
+        $selected && $selected.value !== $inputField.value,
+      );
+      inputField.set($selected.value);
+      $inputValue = $selected.label ?? "";
+    }
+  }
 
   const {
     elements: { menu, input, option, label },
     states: { inputValue, open, touchedInput, selected },
     helpers: { isSelected },
-  } = createCombobox<{ tag: string; priority: string; name: string }>({
-    onOpenChange: handleOpen,
+  } = createCombobox<statusType>({
     defaultSelected,
   });
 
   $: console.log($selected);
 
-  $: filteredTags = $touchedInput
-    ? $areaStore.filter(({ tag }) => {
-        const normalizedInput = $inputValue.toLowerCase();
-        return tag.toLowerCase().includes(normalizedInput);
-      })
-    : $areaStore;
-
-  onMount(() => areaStore.loadAreaEntires());
-  onDestroy(() => {
-    if (unsubInputField) {
-      unsubInputField();
-    }
-  });
-  // TODO: make it so that you can add a prefix and a suffix for the input that will let the use know
-  // that the input will contain the prefix or suffix when submitted
+  $: filteredTags =
+    $touchedInput && $plugin
+      ? $plugin.settings.para.projects.project_statuses.filter(({ name }) => {
+          const normalizedInput = $inputValue.toLowerCase();
+          return name.toLowerCase().includes(normalizedInput);
+        })
+      : $plugin
+        ? $plugin.settings.para.projects.project_statuses
+        : [];
 </script>
 
 <div class="flex flex-col gap-1">
@@ -140,7 +110,7 @@
   <ul
     class=" z-10 flex max-h-[300px] min-w-full flex-col overflow-hidden rounded-lg"
     use:melt={$menu}
-    transition:fly={{ duration: 150, y: -5 }}
+    transition:fly={{ duration: 150, y: -3 }}
   >
     <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
     <div
@@ -164,8 +134,8 @@
             </div>
           {/if}
           <div class="pl-4">
-            <span class="font-medium">{tag.tag}</span>
-            <span class="block text-sm opacity-75">{tag.area_priority}</span>
+            <span class="font-medium">{tag.name}</span>
+            <span class="block text-sm opacity-75">{tag.type}</span>
           </div>
         </li>
       {:else}

@@ -6,6 +6,7 @@
   import { plugin } from "../../stores";
   import { YEARLY } from "../../constants";
   import { Grid } from "../UI";
+  import { TFile } from "obsidian";
   let cols = 3;
 
   const {
@@ -52,13 +53,17 @@
     const date = window.moment(`${periodicFileName}-06-12`, "YYYY-MM-DD");
     const brainOS = get(plugin);
     if (brainOS !== undefined) {
-      await createPeriodicFile(
+      const file = await createPeriodicFile(
         date,
         YEARLY,
         brainOS.settings.periodic.periodicFolder,
         brainOS.settings.periodic.yearly.template,
-        brainOS.app
+        brainOS.app,
       );
+
+      if (file instanceof TFile) {
+        await brainOS.app.workspace.getLeaf().openFile(file);
+      }
     }
   };
 
