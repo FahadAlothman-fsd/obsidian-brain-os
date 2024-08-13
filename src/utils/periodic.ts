@@ -18,7 +18,6 @@ export async function createPeriodicFile(
 
   const locale = window.localStorage.getItem('language') || 'en';
   const date = window.moment(day.format("YYYY-MM-DD"))
-  console.log(date)
 
   let templateFile = '';
   let folder = '';
@@ -41,7 +40,6 @@ export async function createPeriodicFile(
   } else if (periodType === QUARTERLY) {
     folder = `${periodicNotesPath}/${year}/${periodType}`;
     value = date.format('YYYY-[Q]Q');
-    console.log(value)
   } else if (periodType === YEARLY) {
     folder = `${periodicNotesPath}/${year}`;
     value = year;
