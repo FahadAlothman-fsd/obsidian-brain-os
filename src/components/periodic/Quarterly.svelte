@@ -20,39 +20,51 @@
 
   let year: number;
 
-  let grid: {
+  type gridItemType = {
     id: string;
     title: string;
     active: boolean;
     // icon: string;
     // component: any;
-  }[] = [];
+  };
+
+  let grid: gridItemType[] = [];
 
   const year_unsub = headingValue.subscribe((value) => {
     year = Number(value.split(" ")[1]);
     // year = Math.floor(Number(value.split(" ")[1]) / 10) * 10;
     grid = [];
 
-    console.log(`year: ${year}`);
-
     ["Q1", "Q2", "Q3", "Q4"].map((quarter, index) => {
-      grid.push({
+      let item: gridItemType = {
         id: `${year}-${index + 1}`,
         title: `${quarter}`,
-        active: (index + 1) % 2 !== 0,
-      });
+        active: false,
+      };
+
+      const brainOS = get(plugin);
+      if (brainOS) {
+        const month = 1 + Number(index) * 3;
+        const date = window
+          .moment(`${year}-${month}-01`, "YYYY-M-DD")
+          .format("YYYY-[Q]Q");
+        const file = brainOS.app.vault.getFileByPath(
+          `${brainOS.settings.periodic.periodicFolder}/${year}/Quarterly/${date}.md`,
+        );
+        if (file instanceof TFile) {
+          item.active = true;
+        }
+      }
+      grid.push(item);
     });
   });
-  $: console.log($months);
 
   const handleCreateQuarterly = async (periodicFileName: string) => {
     const [year, quarter] = periodicFileName.split("-");
     const month = 1 + (Number(quarter) - 1) * 3;
     const date = window.moment(`${year}-${month}-01`, "YYYY-MM-DD");
     const brainOS = get(plugin);
-    console.log(date);
     if (brainOS !== undefined) {
-      console.log(periodicFileName);
       const file = await createPeriodicFile(
         date,
         QUARTERLY,

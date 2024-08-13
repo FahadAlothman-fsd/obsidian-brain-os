@@ -112,7 +112,7 @@ export default class BrainOS extends Plugin {
     this.loadHelpers()
     await this.initCodeBlockViews()
     this.loadGlobalHelpers()
-    this.setupCodeBlocks()
+    // this.setupCodeBlocks()
 
     await this.setupBrainOSViews()
 

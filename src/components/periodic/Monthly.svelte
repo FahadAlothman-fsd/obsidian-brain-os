@@ -20,27 +20,40 @@
 
   let year: number;
 
-  let grid: {
+  type gridItemType = {
     id: string;
     title: string;
     active: boolean;
     // icon: string;
     // component: any;
-  }[] = [];
+  };
+  let grid: gridItemType[] = [];
 
   const year_unsub = headingValue.subscribe((value) => {
     year = Number(value.split(" ")[1]);
     // year = Math.floor(Number(value.split(" ")[1]) / 10) * 10;
     grid = [];
 
-    console.log(`year: ${year}`);
-
     moment.monthsShort().map((month, index) => {
-      grid.push({
+      let item: gridItemType = {
         id: `${year}-${index + 1}`,
         title: `${month}`,
-        active: (index + 1) % 2 !== 0,
-      });
+        active: false,
+      };
+
+      const brainOS = get(plugin);
+      if (brainOS) {
+        const date = window
+          .moment(`${item.id}-12`, "YYYY-M-DD")
+          .format("YYYY-MM");
+        const file = brainOS.app.vault.getFileByPath(
+          `${brainOS.settings.periodic.periodicFolder}/${year}/Monthly/${date}.md`,
+        );
+        if (file instanceof TFile) {
+          item.active = true;
+        }
+      }
+      grid.push(item);
     });
   });
 
@@ -60,7 +73,6 @@
       }
     }
   };
-  $: console.log($months);
 
   onDestroy(() => {
     year_unsub();

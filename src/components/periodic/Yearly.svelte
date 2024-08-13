@@ -19,13 +19,14 @@
 
   let year: number;
 
-  let grid: {
+  type gridItemType = {
     id: string;
     title: string;
     active: boolean;
     // icon: string;
     // component: any;
-  }[] = [];
+  };
+  let grid: gridItemType[] = [];
 
   const year_unsub = headingValue.subscribe((value) => {
     year = Number(value.split(" ")[1]);
@@ -40,14 +41,23 @@
     }
 
     years.map((yearValue, index) => {
-      grid.push({
+      let item: gridItemType = {
         id: `${yearValue}`,
         title: `${yearValue}`,
-        active: (index + 1) % 2 !== 0,
-      });
+        active: false,
+      };
+      const brainOS = get(plugin);
+      if (brainOS) {
+        const file = brainOS.app.vault.getFileByPath(
+          `${brainOS.settings.periodic.periodicFolder}/${yearValue}/${yearValue}.md`,
+        );
+        if (file instanceof TFile) {
+          item.active = true;
+        }
+      }
+      grid.push(item);
     });
   });
-  $: console.log($months);
 
   const handleCreateYearly = async (periodicFileName: string) => {
     const date = window.moment(`${periodicFileName}-06-12`, "YYYY-MM-DD");

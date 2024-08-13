@@ -1,8 +1,6 @@
 <script lang="ts">
   import { createCalendar, melt } from "@melt-ui/svelte";
-  import { writable, derived, get } from "svelte/store";
-  import { onDestroy } from "svelte";
-  import { field, form } from "svelte-forms";
+  import { get } from "svelte/store";
   import { createPeriodicFile, getISOWeekNumber } from "../../utils/periodic";
   import { plugin } from "../../stores";
   import { DAILY, ERROR_MESSAGE, WEEKLY } from "../../constants";
