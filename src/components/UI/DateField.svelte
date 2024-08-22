@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CalendarDate } from "@internationalized/date";
+  import { CalendarDate, parseDate } from "@internationalized/date";
   import {
     createDateField,
     melt,
@@ -7,31 +7,41 @@
   } from "@melt-ui/svelte";
   import { onDestroy } from "svelte";
   import { field as fd } from "svelte-forms";
+  import { get } from "svelte/store";
+  import ErrorMessage from "./ErrorMessage.svelte";
 
   export let title = "label";
-  export let error: boolean;
   export let inputField: ReturnType<typeof fd<string>>;
   let date: number[] = [];
   export let defaultValue: CreateDateFieldProps["defaultValue"];
 
   $: if ($inputField.value) {
     date = $inputField.value.split("-").map((val) => Number(val));
-    console.log(date);
     defaultValue =
       date.length > 0 ? new CalendarDate(date[0], date[1], date[2]) : undefined;
   }
-  $: console.log(defaultValue);
+
+  let todayDate: CreateDateFieldProps["minValue"] = parseDate(
+    window.moment().format("YYYY-MM-DD").toString(),
+  );
+
   const {
     elements: { field, segment, label, hiddenInput, validation },
     states: { value, segmentContents, isInvalid },
   } = createDateField({
     name: title,
     defaultValue,
+    minValue: todayDate,
   });
 
   const unsub = value.subscribe((value) => {
     if (value) {
-      inputField.set(value.toString());
+      const invalid = get(isInvalid);
+      inputField.update((val) => ({
+        ...val,
+        value: value.toString(),
+        valid: !invalid,
+      }));
     }
   });
 
@@ -64,8 +74,9 @@
   </div>
   <input use:melt={$hiddenInput} />
 </div>
-{#if $isInvalid || error}
+{#if $isInvalid}
   <small class="self-start text-red-500" use:melt={$validation}>
-    Date cannot be on the 1st or 15th of the month.
+    Date cannot be earlier than today ({todayDate.toString()})
   </small>
 {/if}
+<ErrorMessage errors={$inputField.errors} fieldName={$inputField.name} />

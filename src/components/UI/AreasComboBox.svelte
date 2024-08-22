@@ -13,11 +13,11 @@
   import { type Unsubscriber } from "svelte/store";
   import { areaStore } from "../../stores";
   import type { AreaEntryType } from "../../types/paraTypes";
+  import ErrorMessage from "./ErrorMessage.svelte";
 
   // TODO: make this so the parent component passes the options
   export let title = "Label";
   export let placeholder = "Placeholder";
-  export let error: boolean;
   export let inputField: ReturnType<typeof field<string>>;
   let area_tag: AreaEntryType | undefined;
   export let shouldOpen: (
@@ -41,16 +41,22 @@
     priority: string;
     name: string;
   }>["defaultSelected"];
+  export let is_disabled: CreateComboboxProps<{
+    tag: string;
+    priority: string;
+    name: string;
+  }>["disabled"];
 
   $: if ($inputField.value) {
     let a_tag = $inputField.value.split("/").slice(0, -1).join("/");
-    area_tag = areaStore.getAreaByTag(a_tag);
+    area_tag = areaStore.getEntryByTag(a_tag);
 
-    console.log(area_tag);
+    // console.log(area_tag);
     if (area_tag) {
       defaultSelected = toOption(area_tag);
+      console.log(is_disabled);
       inputValue.set($inputField.value);
-      console.log(defaultSelected);
+      // console.log(defaultSelected);
     }
   }
 
@@ -63,14 +69,55 @@
       !shouldOpen($inputValue, $selected.label)
     ) {
       inputField.set($inputValue);
+      // inputField.update((val) => {
+      //   return {
+      //     ...val,
+      //     value: $inputValue,
+      //     dirty: true,
+      //   };
+      // });
       unsubInputField = inputValue.subscribe((val) => {
         inputField.set(val);
+        // inputField.update((field) => {
+        //   return {
+        //     ...field,
+        //     value: val,
+        //     dirty: true,
+        //   };
+        // });
+        if (
+          $selected &&
+          $selected.label &&
+          $selected.label.startsWith(val) &&
+          $selected.label.length > val.length
+        ) {
+          selected.set(undefined);
+          inputValue.set("");
+          inputField.set("");
+
+          // inputField.update((val) => {
+          //   return {
+          //     ...val,
+          //     value: "",
+          //     valid: false,
+          //     dirty: false,
+          //   };
+          // });
+        }
       });
       return false;
     }
     if (!next) {
       $inputValue = $selected?.label ?? "";
       inputField.set($inputValue);
+
+      // inputField.update((val) => {
+      //   return {
+      //     ...val,
+      //     value: $inputValue,
+      //     dirty: true,
+      //   };
+      // });
     }
     if (next && unsubInputField !== undefined) {
       unsubInputField();
@@ -87,9 +134,10 @@
   } = createCombobox<{ tag: string; priority: string; name: string }>({
     onOpenChange: handleOpen,
     defaultSelected,
+    disabled: is_disabled,
   });
 
-  $: console.log($selected);
+  // $: console.log($selected, $input.disabled, $inputField.value);
 
   $: filteredTags = $touchedInput
     ? $areaStore.filter(({ tag }) => {
@@ -98,7 +146,7 @@
       })
     : $areaStore;
 
-  onMount(() => areaStore.loadAreaEntires());
+  onMount(() => areaStore.loadEntries());
   onDestroy(() => {
     if (unsubInputField) {
       unsubInputField();
@@ -117,16 +165,13 @@
   <div class="relative">
     <input
       use:melt={$input}
+      disabled={is_disabled}
       class="flex h-10 items-center justify-between rounded-lg bg-white min-w-full
           px-3 pr-12 text-black"
       {placeholder}
     />
 
-    {#each $inputField.errors as validationErrors}
-      <p class="mt-2 text-sm text-red-600" id={`${$inputField.name}-error`}>
-        {validationErrors}
-      </p>
-    {/each}
+    <ErrorMessage errors={$inputField.errors} fieldName={$inputField.name} />
     <div class="absolute right-2 top-1/2 z-10 -translate-y-1/2 text-magnum-900">
       {#if $open}
         <i class="i-heroicons-chevron-up-16-solid text-4" />

@@ -9,35 +9,50 @@
     projectStore,
     tagsStore,
   } from "../../../stores";
-  import { Status, tagExists } from "../../../utils";
   import {
-    StatusComboBox,
-    AreasComboBox,
-    Input,
-    TagInput,
-    TemplateInput,
-  } from "../../UI";
-  import { createPARAFile, type createPARADataType } from "../../../utils/para";
+    Status,
+    tagExists,
+    getRelativePath,
+    filterTags,
+    filterTemplates,
+    addTagToInput,
+    addTemplateToInput,
+    removeTagFromInput,
+    removeTemplateFromInput,
+    createPARAFile,
+    type createPARADataType,
+  } from "../../../utils";
+  import { StatusComboBox, AreasComboBox, Input, TagInput } from "../../UI";
   import { PROJECT } from "../../../constants";
   import DateField from "../../UI/DateField.svelte";
   import type { ProjectEntryType } from "../../../types/paraTypes";
   import { CalendarDate } from "@internationalized/date";
   import { TFile } from "obsidian";
+  import { onDestroy } from "svelte";
 
   export let project: ProjectEntryType | undefined;
 
-  $: console.log(project);
-
-  type relatedAreaType = {
-    tag: string;
-    priority: string;
-  };
-
+  // TODO: move this to utils so that every tag usage uses this to check existence
+  function checkTagExistance() {
+    return (tag: string) => {
+      const tags = get(tagsStore);
+      if (project) {
+        return {
+          valid: !tagExists(tags, tag) || project.tag === tag,
+          name: "tag_already_taken",
+        };
+      }
+      return {
+        valid: !tagExists(tags, tag),
+        name: "tag_already_taken",
+      };
+    };
+  }
   // TODO: make sure that the user picks an area first, right now if they don't pick anything they can still put dumb shit
   const projectTag = field(
     "project_tag",
     project ? project.tag : "",
-    [required()],
+    [required(), checkTagExistance()],
     {
       validateOnChange: true,
     },
@@ -60,13 +75,26 @@
     },
   );
 
-  const projectRelatedAreas = field<relatedAreaType[]>(
+  type TagComboInputType = {
+    id: string; // will be used as the thing to retrieve the information the consumer of this componenet wants
+    name: string;
+    sub_title: string;
+  };
+  const projectRelatedAreas = field<TagComboInputType[]>(
     "project_related_areas",
     project
-      ? project.related_areas.map((val) => ({
-          tag: val.tag,
-          priority: val.area_priority,
-        }))
+      ? project.related_areas.map((val) => {
+          const brainOS = get(plugin);
+          let name = val.tag;
+          if (brainOS) {
+            name = val.tag.substring(brainOS.settings.para.areas.prefix.length);
+          }
+          return {
+            id: val.tag,
+            name: name,
+            sub_title: val.area_priority,
+          };
+        })
       : [],
     [],
     {
@@ -74,8 +102,32 @@
     },
   );
 
-  $: if ($projectRelatedAreas.value.length > 0) {
-  }
+  const projectRelatedTemplates = field<TagComboInputType[]>(
+    "project_related_templates",
+    project
+      ? project.related_templates.map((val) => {
+          const brainOS = get(plugin);
+
+          let name = val.name;
+          let sub_title = "";
+          if (brainOS) {
+            name = getRelativePath(brainOS.settings.otherTemplates, val.path);
+          }
+          if (val.parent) {
+            sub_title = val.parent.name;
+          }
+          return {
+            id: val.path,
+            name: name,
+            sub_title: sub_title,
+          };
+        })
+      : [],
+    [],
+    {
+      validateOnChange: true,
+    },
+  );
   const projectTemplates = field(
     "project_templates",
     project ? Array.from(project.related_templates) : [],
@@ -85,7 +137,6 @@
     },
   );
 
-  // TODO: this should be of type statusType
   const projectStatus = field(
     "project_status",
     project
@@ -99,10 +150,15 @@
     },
   );
 
+  function checkIfInteger() {
+    return (num: string) => {
+      return { valid: !isNaN(parseInt(num)), name: "not_an_integer" };
+    };
+  }
   const projectPriority = field(
-    "project_prioirty",
-    project ? parseInt(project.project_priority) : 0,
-    [min(1)],
+    "project_priority",
+    project ? parseInt(project.project_priority) : $projectStore.length + 1,
+    [min(1), checkIfInteger()],
     {
       validateOnChange: true,
     },
@@ -122,7 +178,7 @@
     projectFolder,
     projectIndex,
     projectRelatedAreas,
-    projectTemplates,
+    projectRelatedTemplates,
     projectStatus,
     projectPriority,
     projectDeadline,
@@ -141,20 +197,7 @@
     });
   }
 
-  // $: if (
-  //   (!project && $projectRelatedAreas.value.length > 0) ||
-  //   (project &&
-  //     $projectRelatedAreas.value.length !== project.related_templates.length)
-  // ) {
-  //   projectRelatedAreas.update((val) => {
-  //     return {
-  //       ...val,
-  //       dirty: true,
-  //     };
-  //   });
-  // }
-
-  projectTag.subscribe((prjTag) => {
+  const unsub = projectTag.subscribe((prjTag) => {
     if (prjTag.value.length > 0 && prjTag.dirty) {
       const projectName = prjTag.value.substring(
         prjTag.value.lastIndexOf("/") + 1,
@@ -162,13 +205,14 @@
       if (projectName === "") {
         projectFolder.set("");
         projectIndex.set("");
-      } else if (!tagExists($tagsStore, prjTag.value)) {
-        if ($plugin) {
-          if (prjTag.value.startsWith($plugin.settings.para.areas.prefix)) {
+      } else {
+        const brainOS = get(plugin);
+        if (brainOS) {
+          if (prjTag.value.startsWith(brainOS.settings.para.areas.prefix)) {
             projectFolder.set(
               prjTag.value
                 .replace(/[ /]/g, "-")
-                .substring($plugin.settings.para.areas.prefix.length),
+                .substring(brainOS.settings.para.areas.prefix.length),
             );
           } else {
             projectFolder.set(prjTag.value.replace(/[ /]/g, "-"));
@@ -193,27 +237,24 @@
     return open;
   };
 
-  $: console.log(
-    $projectRelatedAreas,
-    project?.related_areas.map((val) => ({
-      tag: val.tag,
-      priority: val.area_priority,
-    })),
-  );
-
   const isLoading = writable<boolean>(false);
 
   const handleCreateProject = async () => {
     isLoading.set(true);
-    createProjectForm.validate();
-    console.log(createProjectForm.summary());
+    await createProjectForm.validate();
     const formData = createProjectForm.summary();
     const brainOS = get(plugin);
     // TODO: display error here indicating that the brainOS wasn't added correctly
-    if (!brainOS) return;
+    if (!brainOS) {
+      // err Notice
+      isLoading.set(false);
+      return;
+    }
 
-    console.log($createProjectForm.valid);
-    if (!$createProjectForm.valid) return;
+    if (!$createProjectForm.valid) {
+      isLoading.set(false);
+      return;
+    }
 
     let data: createPARADataType = {
       para_tag: "",
@@ -221,7 +262,6 @@
       folder_path: "",
     };
     if (formData["project_tag"]) {
-      // TODO: check that the project tag doesn't exist
       if (
         $plugin &&
         formData["project_tag"].startsWith($plugin.settings.para.areas.prefix)
@@ -229,7 +269,7 @@
         data.para_tag = formData["project_tag"];
       } else if ($plugin) {
         data.para_tag =
-          $plugin.settings.para.areas.prefix + formData["area_tag"];
+          $plugin.settings.para.areas.prefix + formData["project_tag"];
       }
     }
 
@@ -247,37 +287,51 @@
       formData["project_related_areas"] &&
       formData["project_related_areas"].length > 0
     ) {
-      // TODO: check that the main area is not tagged here
-      console.log(formData["project_related_areas"]);
-      data.related_areas = formData["project_related_areas"].map(
-        (related_area: { tag: string; priority: number }) => related_area.tag,
-      );
+      data.related_areas = formData["project_related_areas"]
+        .map(
+          (related_area: { id: string; name: string; sub_title: string }) =>
+            related_area.id,
+        )
+        .filter(
+          (val: { id: string; name: string; sub_title: string }) =>
+            val.id !==
+            formData["project_tag"].substring(
+              0,
+              formData["project_tag"].lastIndexOf("/"),
+            ),
+        );
     }
 
     if (
-      formData["project_templates"] &&
-      formData["project_templates"].length > 0
+      formData["project_related_templates"] &&
+      formData["project_related_templates"].length > 0
     ) {
-      data.related_templates = formData["project_templates"];
+      data.related_templates = formData["project_related_templates"];
     }
 
     if (formData["project_deadline"]) {
       data.deadline = formData["project_deadline"];
     }
 
-    if (formData["project_prioirty"]) {
-      data.priority = formData["project_prioirty"];
+    console.log(parseInt(formData["project_priority"]));
+    if (formData["project_priority"]) {
+      const priority = parseInt(formData["project_priority"]);
+
+      data.priority = priority;
     } else {
-      data.priority = `${$projectStore.length + 1}`;
+      data.priority = $projectStore.length + 1;
     }
 
-    if ($plugin) {
-      const status = $plugin.settings.para.projects.project_statuses.find(
-        (status) => status.default,
-      );
-      if (status) {
-        data.status = status.name;
-      }
+    const status = brainOS.settings.para.projects.project_statuses.find(
+      (status) => {
+        if (project === undefined) {
+          return status.default;
+        }
+        return status.id === formData["project_status"].id;
+      },
+    );
+    if (status) {
+      data.status = status.id;
     }
 
     if (
@@ -287,7 +341,7 @@
     ) {
       console.log(data);
       // TODO: make createPARAFile return a status of the form
-      // success: created, project entry details returned
+      // success: created, project TFile
       // failed: not created, status on why it wasn't created
       const file = await createPARAFile(
         data,
@@ -296,18 +350,11 @@
         PROJECT,
       );
       createProjectForm.reset();
-      projectStore.loadProjectEntires();
-      if ($ProjectEntryStore) {
-        ProjectEntryStore.set(
-          projectStore.getProjectByTag($ProjectEntryStore.tag),
-        );
-        console.log($ProjectEntryStore);
-      }
 
       if (file instanceof TFile) {
+        ProjectEntryStore.set(undefined);
         brainOS.app.workspace.getLeaf().openFile(file);
       }
-      console.log($projectStore);
     } else {
       // TODO: display error indicating that information added is not correct
     }
@@ -320,6 +367,8 @@
     // TODO: make the date format dynamic (from the settings)
     date = $projectDeadline.value.split("-").map((val) => Number(val));
   }
+
+  onDestroy(unsub);
 </script>
 
 <div class="flex flex-col gap-3 p-2">
@@ -327,25 +376,24 @@
     inputField={projectTag}
     title={"Tag"}
     placeholder={"#area/sub-area/project..."}
-    error={$createProjectForm.hasError("project_tag.required")}
     shouldOpen={handleShouldOpen}
+    is_disabled={project ? true : undefined}
   />
   <Input
     title={"Folder"}
     placeholder={"project..."}
     inputField={projectFolder}
-    error={$createProjectForm.hasError("project_folder.required")}
+    disabled={project !== undefined}
   />
   <Input
     title={"Entry"}
     placeholder={"project.README.md..."}
     inputField={projectIndex}
-    error={$createProjectForm.hasError("project_index.required")}
+    disabled={project !== undefined}
   />
   <DateField
     title={"Deadline"}
     inputField={projectDeadline}
-    error={$createProjectForm.hasError("project_index.required")}
     defaultValue={date.length > 0
       ? new CalendarDate(date[0], date[1], date[2])
       : undefined}
@@ -366,18 +414,24 @@
     )}
     placeholder="area"
     inputField={projectRelatedAreas}
+    {addTagToInput}
+    {filterTags}
+    {removeTagFromInput}
   />
 
-  <TemplateInput
+  <TagInput
     title={"Project Templates"}
-    placeholder={"live-session.md"}
-    inputField={projectTemplates}
+    placeholder="live-session.md"
+    inputField={projectRelatedTemplates}
+    addTagToInput={addTemplateToInput}
+    filterTags={filterTemplates}
+    removeTagFromInput={removeTemplateFromInput}
   />
 
   <Input title={"Priority"} placeholder={"1"} inputField={projectPriority} />
   <button
     type="button"
-    disabled={!$createProjectForm.valid || !$createProjectForm.dirty}
+    disabled={!$createProjectForm.valid}
     on:click={handleCreateProject}
     class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-indigo-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
   >

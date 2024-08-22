@@ -8,16 +8,15 @@
     type CreateComboboxProps,
   } from "@melt-ui/svelte";
   import { fly } from "svelte/transition";
-  import { app, tagsStore } from "../../stores";
+  import { tagsStore } from "../../stores";
   import type { field } from "svelte-forms";
   import { onMount } from "svelte";
-  import { writable, type Unsubscriber } from "svelte/store";
+  import { type Unsubscriber } from "svelte/store";
 
   // TODO: make this so the parent component passes the options
   export let opts = $tagsStore;
   export let title = "Label";
   export let placeholder = "Placeholder";
-  export let error: boolean;
   export let inputField: ReturnType<typeof field>;
   export let shouldOpen: (
     inputValue: string,

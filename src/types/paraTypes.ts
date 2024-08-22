@@ -1,6 +1,6 @@
 import type { TFile, TFolder } from "obsidian";
 import type { StatusConfiguration, StatusType } from "../utils";
-import type { PROJECT, AREA, RESOURCE } from "../constants";
+import type { PROJECT, AREA, RESOURCE, SUB_AREA } from "../constants";
 
 
 
@@ -11,6 +11,7 @@ export type AreaEntryType = {
   area_priority: string;
   README: TFile;
   folder_name?: TFolder;
+  type: typeof AREA | typeof SUB_AREA
 }
 
 export type ProjectEntryType = {
@@ -59,10 +60,6 @@ export type statusType = {
 
 
 export type PARAType = {
-  // templatePath: string; // should make sure its a path
-  // projectsPath: string; // should be a path 
-  // areasPath: string; // should be a path
-  // resourcesPath: string; //should be a path
 
   usePARANotes: boolean;
   projects: {

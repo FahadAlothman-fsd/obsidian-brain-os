@@ -1,10 +1,11 @@
 <script lang="ts">
   import { field } from "svelte-forms";
+  import ErrorMessage from "./ErrorMessage.svelte";
 
   export let title = "label";
   export let placeholder = "placeholder";
-  export let error: boolean = false;
   export let inputField: ReturnType<typeof field>;
+  export let disabled: boolean = false;
 </script>
 
 <div class="flex flex-col gap-1">
@@ -15,24 +16,16 @@
 
   <div class="relative">
     <input
+      {disabled}
       bind:value={$inputField.value}
       class="flex h-10 items-center justify-between rounded-lg bg-white min-w-full
           px-3 pr-12 ring-1 text-black"
-      class:focus:ring-2={error}
-      class:ring-inset={error}
-      class:ring-red-300={error}
-      class:text-red-900={error}
+      class:focus:ring-2={$inputField.errors.length > 0}
+      class:ring-inset={$inputField.errors.length > 0}
+      class:ring-red-300={$inputField.errors.length > 0}
+      class:text-red-900={$inputField.errors.length > 0}
       {placeholder}
     />
-    {#each $inputField.errors as validationErrors}
-      <p class="mt-2 text-sm text-red-600" id={`${$inputField.name}-error`}>
-        {validationErrors}
-      </p>
-    {/each}
-    <!-- {#if $inputField.errors} -->
-    <!--   <p class="mt-2 text-sm text-red-600" id={`${$inputField.name}-error`}> -->
-    <!--     Not a valid {title}. -->
-    <!--   </p> -->
-    <!-- {/if} -->
+    <ErrorMessage errors={$inputField.errors} fieldName={$inputField.name} />
   </div>
 </div>

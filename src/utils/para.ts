@@ -1,19 +1,21 @@
 import { TFolder, type App, TFile, TAbstractFile, Notice } from "obsidian";
 import type { BrainSettings } from "../types";
-import { createFile } from "./files";
+import { createFile, getRelativePath } from "./files";
 import { PROJECT, AREA, SUB_AREA, RESOURCE, ERROR_MESSAGE } from "../constants";
 import type { templateType } from "../stores";
 import { I18N_MAP } from "../i18n";
-import { plugin } from "../stores";
+import { areaStore, plugin, templateStore } from "../stores";
+import { get } from "svelte/store";
+import type { field } from "svelte-forms";
 
 export type createPARADataType = {
   entry_file: string;
   para_tag: string;
   folder_path: string;
   related_areas?: string[];
-  related_templates?: templateType[]
+  related_templates?: TagComboInputType[]
   deadline?: string;
-  priority?: string;
+  priority?: number;
   status?: string;
 }
 export type PARATypes = typeof PROJECT | typeof AREA | typeof SUB_AREA | typeof RESOURCE
@@ -21,6 +23,196 @@ export type findPARAFileConditionsType = {
   tags: string[];
 }
 
+type TagComboInputType = {
+  id: string; // will be used as the thing to retrieve the information the consumer of this componenet wants
+  name: string;
+  sub_title: string;
+};
+
+export function filterTags(
+  touchedInput: boolean,
+  inputValue: string,
+  tags: { id: string; value: string }[],
+  prohibited_tag: string | undefined,
+): TagComboInputType[] {
+  const areas = get(areaStore);
+  return touchedInput
+    ? areas
+      .filter((val) => {
+        return (
+          !tags.some((tag) => tag.id === val.tag) &&
+          val.tag !== prohibited_tag
+        );
+      })
+      .filter(({ tag }) => {
+        const normalizedInput = inputValue.toLowerCase();
+        return tag.toLowerCase().includes(normalizedInput);
+      })
+      .map((val) => {
+
+        const brainOS = get(plugin)
+        let areaName = val.tag
+        if (brainOS) {
+          areaName = val.tag.substring(brainOS.settings.para.areas.prefix.length)
+        }
+        return {
+          id: val.tag,
+          name: areaName,
+          sub_title: val.area_priority,
+        }
+      })
+    : areas
+      .filter((val) => {
+        return (
+          !tags.some((tag) => tag.id === val.tag) &&
+          val.tag !== prohibited_tag
+        );
+      })
+      .map((val) => {
+        const brainOS = get(plugin)
+        let areaName = val.tag
+        if (brainOS) {
+          areaName = val.tag.substring(brainOS.settings.para.areas.prefix.length)
+        }
+        return {
+          id: val.tag,
+          name: areaName,
+          sub_title: val.area_priority,
+        }
+      })
+      .sort((a, b) => {
+        if (parseInt(a.sub_title) && parseInt(b.sub_title)) {
+          return parseInt(a.sub_title) - parseInt(b.sub_title)
+        }
+        return 0
+      })
+};
+
+
+
+export function filterTemplates(
+  touchedInput: boolean,
+  inputValue: string,
+  tags: { id: string; value: string }[],
+  prohibited_tag: string | undefined,
+): TagComboInputType[] {
+
+  const templates = get(templateStore);
+  return touchedInput
+    ? templates
+      .filter((val) => {
+        return (
+          !tags.some((tag) => tag.id === val.path)
+
+        );
+      })
+      .filter(({ name }) => {
+        const normalizedInput = inputValue.toLowerCase();
+        return name.toLowerCase().includes(normalizedInput);
+      })
+      .map((val) => ({
+        id: val.path,
+        name: val.name,
+        sub_title: val.parent?.name || "",
+      }))
+    : templates
+      .filter((val) => {
+        return (
+          !tags.some((tag) => tag.id === val.path)
+
+        );
+      })
+      .map((val) => ({
+        id: val.path,
+        name: val.name,
+        sub_title: val.parent?.name || "",
+      }));
+}
+
+
+
+
+export function addTagToInput(
+  tag: string,
+  form_field: ReturnType<typeof field<TagComboInputType[]>>,
+): { id: string; value: string } | undefined {
+  const brainOS = get(plugin);
+  if (brainOS) {
+    const area = areaStore.getEntryByTag(tag);
+    if (area) {
+      const input_field_values = get(form_field).value;
+      form_field.set([
+        ...input_field_values,
+        {
+          id: area.tag,
+          name: area.tag.substring(brainOS.settings.para.areas.prefix.length),
+          sub_title: area.area_priority,
+        },
+      ]);
+    }
+    return {
+      id: tag,
+      value: tag.substring(brainOS.settings.para.areas.prefix.length),
+    };
+  }
+};
+
+export function removeTagFromInput(tag: string, form_field: ReturnType<typeof field<TagComboInputType[]>>): void {
+  const brainOS = get(plugin);
+  if (brainOS) {
+    const area = areaStore.getEntryByTag(tag);
+    if (area) {
+      const input_field_values = get(form_field).value;
+      form_field.set(input_field_values.filter((val) => val.id !== area.tag));
+    }
+  }
+};
+
+
+
+export function addTemplateToInput(
+  tag: string,
+  form_field: ReturnType<typeof field<TagComboInputType[]>>,
+): { id: string; value: string } | undefined {
+  const templates = get(templateStore);
+
+  const template = templates.find((temp) => temp.path === tag);
+  const brainOS = get(plugin)
+  console.log(tag)
+  let value = tag
+  if (brainOS) {
+    value = getRelativePath(brainOS.settings.otherTemplates, tag)
+    console.log(tag)
+    if (template) {
+      const input_field_values = get(form_field).value;
+      form_field.set([
+        ...input_field_values,
+        {
+          id: template.path,
+          name: template.name,
+          sub_title: template.parent?.name || "",
+        },
+      ]);
+    }
+  }
+  return {
+    id: tag,
+    value: value,
+  };
+};
+
+export function removeTemplateFromInput(tag: string, form_field: ReturnType<typeof field<TagComboInputType[]>>): void {
+  const templates = get(templateStore);
+
+  const brainOS = get(plugin);
+  if (brainOS) {
+    const template = templates.find((temp) => temp.path === tag);
+    if (template) {
+      const input_field_values = get(form_field).value;
+      form_field.set(input_field_values.filter((val) => val.id !== template.path));
+    }
+  }
+};
 
 export function getParaREADMEFiles(
   app: App,
@@ -84,7 +276,6 @@ export function getParaREADMEFiles(
       }
     }
 
-    console.log(result)
     if (result.length === 0) {
       new Notice(
         I18N_MAP[locale][`${ERROR_MESSAGE}NO_PARA_ENTRIES`] + dir,
@@ -101,7 +292,6 @@ export function getParaREADMEFiles(
 }
 
 export function generateHeaderRegExp(header: string) {
-  console.log(header)
   const formattedHeader = /^#+/.test(header.trim())
     ? header.trim()
     : `# ${header.trim()}`;
@@ -203,12 +393,10 @@ export const findParaFile = async (
 
           fileTags = tags.map((tag: string) => tag.replace(/^#(.*)$/, '$1'));
           fileTags = tags
-          console.log(fileTags)
         }
 
         // tags: #work/project-1 #work/project-2
         // condition.tags: #work
-        console.log(fileTags, conditions.tags.map((tag: string) => tag.replace(/^#(.*)$/, '$1')))
         if (hasCommonPrefix(fileTags, conditions.tags.map((tag: string) => tag.replace(/^#(.*)$/, '$1')))) {
           return true;
         }
@@ -243,7 +431,6 @@ function hasCommonPrefix(tags1: string[], tags2: string[]) {
 
 export const createPARAFile = async (values: createPARADataType, app: App, settings: BrainSettings, type: PARATypes) => {
 
-  console.log(values)
   const locale = window.localStorage.getItem('language') || 'en';
   if (!app || !settings) {
     // TODO: add notice to indicate that the app or settings are not defined (only when debug mode is on)
@@ -271,6 +458,12 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
     if (values.priority) {
       metadata[settings.para.areas.priority_frontmatter] = values.priority
     }
+    if (type === SUB_AREA) {
+
+      const parent_folder = values.para_tag.split("/").slice(0, -1)
+      path = `${path}/${parent_folder.map((val, index) =>
+        index === 0 ? val.substring(settings.para.areas.prefix.length) : val).join("/")}`
+    }
 
   } else if (type === PROJECT) {
     path = settings.para.projects.folder
@@ -281,13 +474,13 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
     }
 
     if (values.priority) {
+      // TODO: if the priority exists then knock the lower priority projects down (e.g. 1 -> 2, 2 -> 3 ,etc)
       metadata[settings.para.projects.priority_frontmatter] = values.priority
     }
 
     if (values.status) {
       // TODO: get all the statuses from settings and check if the value of the status 
       // if it doesn't exist, Notice and return error
-      console.log(values.status)
       metadata[settings.para.projects.status_frontmatter] = values.status
     }
 
@@ -319,15 +512,12 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
 
     const templates = values.related_templates.map((template) => {
 
-      const tempFile = app.vault.getFileByPath(template.path)
-      console.log(tempFile)
+      const tempFile = app.vault.getFileByPath(template.id)
       if (tempFile instanceof TFile) {
         // const link = app.metadataCache.fileToLinktext(
         //   tempFile,
         //   tempFile.path
         // );
-        // console.log(app.metadataCache.getFirstLinkpathDest(link, folder))
-        console.log(`[[${tempFile.path}|${tempFile.name}]]`)
         return `[[${tempFile.path}|${tempFile.name}]]`;
       }
     })
@@ -338,7 +528,6 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
       metadata[settings.other_templates_frontmatter] = templates
     }
   }
-  console.log(metadata)
 
 
   const createdFile = await createFile(app, {

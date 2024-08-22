@@ -7,7 +7,7 @@ import { dataviewStore, plugin } from "./pluginStore";
 import { getParaREADMEFiles, isArrayOfStrings, Status } from "../utils";
 import { templateStore, type templateType } from ".";
 import { DataviewApi } from "obsidian-dataview";
-import { AREA, PROJECT, RESOURCE } from "../constants";
+import { AREA, PROJECT, RESOURCE, SUB_AREA } from "../constants";
 
 
 const PARAStore = writable<{
@@ -60,7 +60,6 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
   areaStore.subscribe(($area_entries) => {
     if ($area_entries && $area_entries.length > 0) {
       _areas = $area_entries
-      // console.log(_areas)
     }
   })
 
@@ -68,7 +67,6 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
 
   function getEntryByTag(tag: string) {
     const prj_entires = get(ProjectEntriesStore)
-    console.log(prj_entires.find((entry) => entry.tag === tag))
 
     return prj_entires.find((entry) => entry.tag === tag)
 
@@ -92,7 +90,6 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
       if (projectREADMEs.length > 0) {
         const ProjectEntries = projectREADMEs.filter(file => file instanceof TFile).map((project_README) => {
 
-          console.log(project_README)
 
           const projectEntry: ProjectEntryType = {
             tag: "",
@@ -110,20 +107,16 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
           const file = app.metadataCache.getFileCache(project_README)
 
           if (file) {
-            console.log(file)
 
             if (file.frontmatter) {
 
               if (file.frontmatter.hasOwnProperty('tags') && isArrayOfStrings(file.frontmatter['tags'])) {
-                // TODO: double check if the para tag is the last tag inserted or the first (i think its the last)
-                // you could check also if the name matches either the README or the parent folder for any clues 
-                projectEntry.tag = file.frontmatter['tags'][file.frontmatter['tags'].length - 1]
-                file.frontmatter['tags'].map((tag) => {
-                  if (tag.startsWith(settings.para.areas.prefix)) {
-                    // console.log(tag)
-                  }
-                })
-                // console.log("it has a project tag")
+
+                const tag = file.frontmatter['tags'].find((tag) => tag.startsWith(settings.para.areas.prefix))
+
+                if (tag) {
+                  projectEntry.tag = tag
+                }
               }
 
               if (file.frontmatter.hasOwnProperty(settings.para.projects.status_frontmatter)) {
@@ -134,18 +127,15 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
 
                   projectEntry.project_status = stat
                 }
-                // console.log(`it has project status: ${projectEntry.project_status} - ${projectEntry.project_tag}`)
 
               }
 
               if (file.frontmatter.hasOwnProperty(settings.para.projects.priority_frontmatter)) {
 
                 projectEntry.project_priority = file.frontmatter[settings.para.projects.priority_frontmatter]
-                console.log("it has project priority", projectEntry, file.frontmatter[settings.para.projects.priority_frontmatter])
               }
 
 
-              // console.log(settings.para.projects.related_areas_frontmatter)
               if (file.frontmatter.hasOwnProperty(settings.para.projects.related_areas_frontmatter)
                 && isArrayOfStrings(file.frontmatter[settings.para.projects.related_areas_frontmatter])) {
                 // TODO: search the tag of each area in the related_areas frontmatter 
@@ -153,11 +143,8 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
                 let areas: AreaEntryType[] = file.frontmatter[settings.para.projects.related_areas_frontmatter]
                   .map((area_tag: string) => _areas.find((area_entry) => area_entry.tag === area_tag))
                   .filter((ar: AreaEntryType | undefined) => !!ar)
-                // console.log(file.frontmatter[settings.para.projects.related_areas_frontmatter])
-                // console.log(areas)
 
                 projectEntry.related_areas = areas
-                // console.log("it has related areas")
 
               }
 
@@ -172,16 +159,13 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
                     return template
                   }
                 })
-                // console.log(templates)
                 projectEntry.related_templates = templates
-                // console.log("it has related templates")
 
               }
 
               if (file.frontmatter.hasOwnProperty(settings.para.projects.deadline_frontmatter)) {
                 // TODO: get the date from the deadline
                 projectEntry.project_deadline = file.frontmatter[settings.para.projects.deadline_frontmatter]
-                console.log("it has deadline", projectEntry.project_deadline)
 
               }
 
@@ -288,6 +272,7 @@ const AreaStore = () => {
             // project_status: "",
             area_priority: "",
             README: area_README,
+            type: AREA
           }
 
           if (area_README.parent) {
@@ -297,15 +282,18 @@ const AreaStore = () => {
           const file = app.metadataCache.getFileCache(area_README)
 
           if (file) {
-            // console.log(file)
 
             if (file.frontmatter) {
 
               if (file.frontmatter.hasOwnProperty('tags') && isArrayOfStrings(file.frontmatter['tags'])) {
                 // TODO: double check if the para tag is the last tag inserted or the first (i think its the last)
                 // you could check also if the name matches either the README or the parent folder for any clues 
-                areaEntry.tag = file.frontmatter['tags'][file.frontmatter['tags'].length - 1]
-                // console.log("it has an area tag")
+
+                const tag = file.frontmatter['tags'].find((tag) => tag.startsWith(settings.para.areas.prefix))
+
+                if (tag) {
+                  areaEntry.tag = tag
+                }
               }
 
               // TODO: Add area status (for archiving purporses) in the settings
@@ -313,14 +301,12 @@ const AreaStore = () => {
               // if (file.frontmatter.hasOwnProperty(settings.para.projects.status_frontmatter)) {
               //
               //   prj.project_status = file.frontmatter[settings.para.projects.status_frontmatter]
-              //   console.log(`it has project status: ${prj.project_status} - ${prj.project_tag}`)
               //
               // }
 
               if (file.frontmatter.hasOwnProperty(settings.para.areas.priority_frontmatter)) {
 
                 areaEntry.area_priority = file.frontmatter[settings.para.areas.priority_frontmatter]
-                // console.log("it has an area priority")
               }
 
 
@@ -335,9 +321,7 @@ const AreaStore = () => {
                     return template
                   }
                 })
-                console.log(templates)
                 areaEntry.related_templates = templates
-                // console.log("it has related templates")
 
 
               }
@@ -554,7 +538,6 @@ const ResourceStore = () => {
 
                 if (file.frontmatter.hasOwnProperty('tags') && isArrayOfStrings(file.frontmatter['tags'])) {
                   const tag = file.frontmatter['tags'].find((tag) => tag.startsWith(settings.para.resources.prefix))
-
                   if (tag) {
                     resourceEntry.tag = tag
                   }
@@ -650,7 +633,6 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
     areaStore.subscribe(($area_entries) => {
       if ($area_entries && $area_entries.length > 0) {
         _areas = $area_entries
-        // console.log(_areas)
       }
     })
 
@@ -700,9 +682,6 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
         const projectREADMEs = getParaREADMEFiles(app, `${settings.para.archives.folder}/${PROJECT}`)
         const areaREADMEs = getParaREADMEFiles(app, `${settings.para.archives.folder}/${AREA}`)
         const resourceREADMEs = getParaREADMEFiles(app, `${settings.para.archives.folder}/${RESOURCE}`)
-        console.log(projectREADMEs)
-        console.log(areaREADMEs)
-        console.log(resourceREADMEs)
 
 
         if (areaREADMEs.length > 0) {
@@ -716,6 +695,7 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
               // project_status: "",
               area_priority: "",
               README: area_README,
+              type: AREA
             }
 
             if (area_README.parent) {
@@ -725,15 +705,17 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
             const file = app.metadataCache.getFileCache(area_README)
 
             if (file) {
-              // console.log(file)
 
               if (file.frontmatter) {
 
                 if (file.frontmatter.hasOwnProperty('tags') && isArrayOfStrings(file.frontmatter['tags'])) {
                   // TODO: double check if the para tag is the last tag inserted or the first (i think its the last)
                   // you could check also if the name matches either the README or the parent folder for any clues 
-                  areaEntry.tag = file.frontmatter['tags'][file.frontmatter['tags'].length - 1]
-                  // console.log("it has an area tag")
+                  const tag = file.frontmatter['tags'].find((tag) => tag.startsWith(settings.para.areas.prefix))
+
+                  if (tag) {
+                    areaEntry.tag = tag
+                  }
                 }
 
                 // TODO: Add area status (for archiving purporses) in the settings
@@ -741,14 +723,12 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
                 // if (file.frontmatter.hasOwnProperty(settings.para.projects.status_frontmatter)) {
                 //
                 //   prj.project_status = file.frontmatter[settings.para.projects.status_frontmatter]
-                //   console.log(`it has project status: ${prj.project_status} - ${prj.project_tag}`)
                 //
                 // }
 
                 if (file.frontmatter.hasOwnProperty(settings.para.areas.priority_frontmatter)) {
 
                   areaEntry.area_priority = file.frontmatter[settings.para.areas.priority_frontmatter]
-                  // console.log("it has an area priority")
                 }
 
 
@@ -763,9 +743,7 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
                       return template
                     }
                   })
-                  console.log(templates)
                   areaEntry.related_templates = templates
-                  // console.log("it has related templates")
 
 
                 }
@@ -790,7 +768,6 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
         if (projectREADMEs.length > 0) {
           const ProjectEntries = projectREADMEs.filter(file => file instanceof TFile).map((project_README) => {
 
-            console.log(project_README)
 
             const projectEntry: ProjectEntryType = {
               tag: "",
@@ -808,20 +785,17 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
             const file = app.metadataCache.getFileCache(project_README)
 
             if (file) {
-              console.log(file)
 
               if (file.frontmatter) {
 
                 if (file.frontmatter.hasOwnProperty('tags') && isArrayOfStrings(file.frontmatter['tags'])) {
                   // TODO: double check if the para tag is the last tag inserted or the first (i think its the last)
                   // you could check also if the name matches either the README or the parent folder for any clues 
-                  projectEntry.tag = file.frontmatter['tags'][file.frontmatter['tags'].length - 1]
-                  file.frontmatter['tags'].map((tag) => {
-                    if (tag.startsWith(settings.para.areas.prefix)) {
-                      // console.log(tag)
-                    }
-                  })
-                  // console.log("it has a project tag")
+                  const tag = file.frontmatter['tags'].find((tag) => tag.startsWith(settings.para.areas.prefix))
+
+                  if (tag) {
+                    projectEntry.tag = tag
+                  }
                 }
 
                 if (file.frontmatter.hasOwnProperty(settings.para.projects.status_frontmatter)) {
@@ -832,18 +806,15 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
 
                     projectEntry.project_status = stat
                   }
-                  // console.log(`it has project status: ${projectEntry.project_status} - ${projectEntry.project_tag}`)
 
                 }
 
                 if (file.frontmatter.hasOwnProperty(settings.para.projects.priority_frontmatter)) {
 
                   projectEntry.project_priority = file.frontmatter[settings.para.projects.priority_frontmatter]
-                  console.log("it has project priority", projectEntry, file.frontmatter[settings.para.projects.priority_frontmatter])
                 }
 
 
-                // console.log(settings.para.projects.related_areas_frontmatter)
                 if (file.frontmatter.hasOwnProperty(settings.para.projects.related_areas_frontmatter)
                   && isArrayOfStrings(file.frontmatter[settings.para.projects.related_areas_frontmatter])) {
                   // TODO: search the tag of each area in the related_areas frontmatter 
@@ -851,11 +822,8 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
                   let areas: AreaEntryType[] = file.frontmatter[settings.para.projects.related_areas_frontmatter]
                     .map((area_tag: string) => _areas.find((area_entry) => area_entry.tag === area_tag))
                     .filter((ar: AreaEntryType | undefined) => !!ar)
-                  // console.log(file.frontmatter[settings.para.projects.related_areas_frontmatter])
-                  // console.log(areas)
 
                   projectEntry.related_areas = areas
-                  // console.log("it has related areas")
 
                 }
 
@@ -870,16 +838,13 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
                       return template
                     }
                   })
-                  // console.log(templates)
                   projectEntry.related_templates = templates
-                  // console.log("it has related templates")
 
                 }
 
                 if (file.frontmatter.hasOwnProperty(settings.para.projects.deadline_frontmatter)) {
                   // TODO: get the date from the deadline
                   projectEntry.project_deadline = file.frontmatter[settings.para.projects.deadline_frontmatter]
-                  console.log("it has deadline", projectEntry.project_deadline)
 
                 }
 

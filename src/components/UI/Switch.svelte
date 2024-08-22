@@ -7,10 +7,12 @@
 
   export let inputField: ReturnType<typeof field<boolean>>;
   export let state = writable<boolean>($inputField.value);
+  export let disabled: boolean | undefined;
   const {
     elements: { root, input },
   } = createSwitch({
     checked: state,
+    disabled: disabled,
   });
 
   $: inputField.set($state);
@@ -23,6 +25,7 @@
   <!-- Enabled: "bg-indigo-600", Not Enabled: "bg-gray-200" -->
   <button
     use:melt={$root}
+    {disabled}
     type="button"
     class:bg-magnum-600={$state}
     class="clickable-icon relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"

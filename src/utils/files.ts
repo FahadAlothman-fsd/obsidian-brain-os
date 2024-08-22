@@ -411,7 +411,7 @@ async function processFrontmatter(app: App,
           const metadata_value = metadata[metadata_key]
           console.log(typeof metadata_key, isArrayOfStrings(metadata_value), metadata_key)
           if (isArrayOfStrings(metadata_value)) {
-            if (frontMatter.hasOwnProperty(metadata_key)) {
+            if (frontMatter.hasOwnProperty(metadata_key) && metadata_key === "tags") {
               const new_items = metadata_value.filter((value) => !frontMatter[metadata_key].some((val: string) => val === value))
 
               // TODO: - see if the para tag changes (find the one with the prefix) if it changed do the replacing func from tag wrangler 

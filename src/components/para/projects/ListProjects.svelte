@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { writable } from "svelte/store";
+  import { get } from "svelte/store";
   import ScrollArea from "../../UI/ScrollArea.svelte";
-  import { onDestroy } from "svelte";
-  import { PARAStore, plugin } from "../../../stores";
+  import { onMount } from "svelte";
+  import { plugin, projectStore } from "../../../stores";
   import { TFile } from "obsidian";
 
   type ProjectType = {
@@ -12,23 +12,23 @@
   };
   let items: ProjectType[];
   const handleClick = async (link: string) => {
-    if ($plugin) {
-      const file = $plugin.app.vault.getFileByPath(link);
+    const brainOS = get(plugin);
+    if (brainOS) {
+      const file = brainOS.app.vault.getFileByPath(link);
       if (file instanceof TFile) {
-        await $plugin.app.workspace.getLeaf().openFile(file);
+        await brainOS.app.workspace.getLeaf().openFile(file);
       }
     }
   };
-  const unsub = PARAStore.subscribe(async (para) => {
-    const projects = await para?.project.getAllPARAFiles();
-    if (projects) {
-      items = projects.map((project) => {
-        return { id: project.id, link: project.link, label: project.name };
-      });
-    }
+  onMount(() => {
+    items = projectStore.getEntries().map((project) => {
+      return {
+        id: project.tag,
+        link: project.README.path,
+        label: project.tag,
+      };
+    });
   });
-
-  onDestroy(unsub);
 </script>
 
 <ScrollArea {items} handleLinkClick={handleClick} />

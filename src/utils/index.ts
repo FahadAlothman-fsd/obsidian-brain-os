@@ -3,9 +3,13 @@ import type { App } from "obsidian";
 import type { ClassValue } from "clsx";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { createFile, findTemplateFiles, getPARATagsByFolder, getRelativePath } from "./files"
+import { createFile, findTemplateFiles, getPARATagsByFolder, getRelativePath, } from "./files"
 import { createPeriodicFile } from "./periodic";
-import { createPARAFile, generateHeaderRegExp, getParaREADMEFiles } from "./para";
+import {
+  createPARAFile, generateHeaderRegExp, getParaREADMEFiles,
+  type createPARADataType,
+  filterTags, filterTemplates, addTagToInput, addTemplateToInput, removeTagFromInput, removeTemplateFromInput,
+} from "./para";
 import { LogLevel, type Tag } from "../types";
 import { StatusType, StatusConfiguration, Status, StatusValidator } from "./status";
 
@@ -20,7 +24,7 @@ function cn(...inputs: ClassValue[]) {
 
 function tagExists(tags: Tag[], tag: string) {
 
-  return tags.some(tagItem => tagItem.value === tag)
+  return tags.some(tagItem => tagItem.value === `#${tag}`)
 }
 
 function sleep(milliseconds: number): Promise<void> {
@@ -56,11 +60,18 @@ export function logMessage(message: string, level: LogLevel = LogLevel.info) {
 
 export {
   sleep, renderError,
-  createFile, findTemplateFiles, getPARATagsByFolder, getRelativePath,
-  createPeriodicFile,
-  createPARAFile, generateHeaderRegExp, getParaREADMEFiles,
   cn, tagExists,
   isArrayOfStrings,
+  // files
+  createFile, findTemplateFiles, getPARATagsByFolder, getRelativePath,
+  // periodic
+  createPeriodicFile,
+  // PARA
+  createPARAFile, generateHeaderRegExp, getParaREADMEFiles,
+  filterTemplates, filterTags, removeTagFromInput, removeTemplateFromInput,
+  addTagToInput, addTemplateToInput,
+  type createPARADataType,
+  // Status
   StatusType, StatusConfiguration, Status, StatusValidator
 }
 

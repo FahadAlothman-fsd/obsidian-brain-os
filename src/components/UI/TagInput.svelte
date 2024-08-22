@@ -9,60 +9,136 @@
   import { fly } from "svelte/transition";
   import { areaStore, plugin } from "../../stores";
   import type { field } from "svelte-forms";
+  import { get } from "svelte/store";
+  import { onDestroy } from "svelte";
+
+  type TagComboInputType = {
+    id: string; // will be used as the thing to retrieve the information the consumer of this componenet wants
+    name: string;
+    sub_title: string;
+  };
 
   export let title = "label";
   export let placeholder = "placeholder";
-  export let inputField: ReturnType<typeof field<relatedAreaType[]>>;
-  export let prohibited_tag: string;
+  export let inputField: ReturnType<typeof field<TagComboInputType[]>>;
+  export let prohibited_tag: string | undefined = undefined;
 
-  type relatedAreaType = {
-    tag: string;
-    priority: string;
+  export let filterTags: (
+    touchedInput: boolean,
+    inputValue: string,
+    tags: Tag[],
+    prohibited_tag: string | undefined,
+  ) => TagComboInputType[] = (
+    touchedInput,
+    inputValue,
+    tags,
+    prohibited_tag: string | undefined,
+  ) => {
+    const areas = get(areaStore);
+    return touchedInput
+      ? areas
+          .filter((val) => {
+            return (
+              !tags.some((tag) => tag.id === val.tag) &&
+              val.tag !== prohibited_tag
+            );
+          })
+          .filter(({ tag }) => {
+            const normalizedInput = inputValue.toLowerCase();
+            return tag.toLowerCase().includes(normalizedInput);
+          })
+          .map((val) => ({
+            id: val.README.path,
+            name: val.tag,
+            sub_title: val.area_priority,
+          }))
+      : areas
+          .filter((val) => {
+            return (
+              !tags.some((tag) => tag.id === val.tag) &&
+              val.tag !== prohibited_tag
+            );
+          })
+          .map((val) => ({
+            id: val.README.path,
+            name: val.tag,
+            sub_title: val.area_priority,
+          }));
   };
-  console.log($inputField);
-  const initialTags =
-    $inputField.value.map((val) => ({ id: val.tag, value: val.tag })) || [];
 
+  export let addTagToInput: (
+    tag: string,
+    form_field: typeof inputField,
+  ) => Tag | undefined = (tag, form_field) => {
+    const brainOS = get(plugin);
+    if (brainOS) {
+      const area = areaStore.getEntryByTag(tag);
+      if (area) {
+        const input_field_values = get(inputField).value;
+        form_field.set([
+          ...input_field_values,
+          {
+            id: area.README.path,
+            name: area.tag,
+            sub_title: area.area_priority,
+          },
+        ]);
+      }
+      return {
+        id: tag,
+        value: tag.substring(brainOS.settings.para.areas.prefix.length),
+      };
+    }
+  };
+
+  export let removeTagFromInput: (
+    tag: string,
+    form_field: typeof inputField,
+  ) => void = (tag, form_field) => {
+    const brainOS = get(plugin);
+    if (brainOS) {
+      const area = areaStore.getEntryByTag(tag);
+      if (area) {
+        const input_field_values = get(form_field).value;
+        input_field_values.remove({
+          id: area.README.path,
+          name: area.tag,
+          sub_title: area.area_priority,
+        });
+        form_field.set(input_field_values);
+      }
+    }
+  };
+
+  let initialTags: Tag[] | undefined;
+  const unsub = inputField.subscribe((val) => {
+    initialTags =
+      val.value.map((val) => ({ id: val.id, value: val.name })) || [];
+  });
+
+  console.log(prohibited_tag);
+
+  // TODO: Changes to TagsInput
+  // - make it dynamic such that any multiselect usage will use this component
+  // - add to the remove func the removing from selected in combobox
   const {
     elements: { root, tag, deleteTrigger, edit },
     states: { tags },
-    helpers: { addTag },
+    helpers: { addTag, removeTag },
   } = createTagsInput({
     defaultTags: initialTags,
     unique: true,
     add(tag) {
-      let added_tag: Tag = {
+      console.log(addTagToInput(tag, inputField));
+      let added_tag: Tag = addTagToInput(tag, inputField) || {
         id: tag,
         value: tag,
       };
-      if ($plugin) {
-        const area = areaStore.getAreaByTag(tag);
-        if (area) {
-          $inputField.value.push({
-            tag: area.tag,
-            priority: area.area_priority,
-          });
-        }
-        added_tag = {
-          ...added_tag,
-          value: added_tag.id.substring(
-            $plugin.settings.para.areas.prefix.length,
-          ),
-        };
-      }
       return added_tag;
     },
     remove(tag) {
-      $selected = undefined;
-      if ($plugin) {
-        const area = areaStore.getAreaByTag(tag.id);
-        if (area) {
-          $inputField.value.remove({
-            tag: area.tag,
-            priority: area.area_priority,
-          });
-        }
-      }
+      selected.set(undefined);
+      removeTagFromInput(tag.id, inputField);
 
       return true;
     },
@@ -70,25 +146,28 @@
   });
 
   const toOption = (
-    tag: relatedAreaType,
-  ): ComboboxOptionProps<relatedAreaType> => ({
+    tag: TagComboInputType,
+  ): ComboboxOptionProps<TagComboInputType> => ({
     value: tag,
-    label: tag.tag,
+    label: tag.name,
   });
 
   const {
     elements: { menu, input, option },
     states: { open, inputValue, touchedInput, selected },
     helpers: { isSelected },
-  } = createCombobox<relatedAreaType>({
+  } = createCombobox<TagComboInputType>({
     forceVisible: true,
   });
 
   $: if (!$open) {
-    if ($selected?.label) {
+    if (prohibited_tag && $tags.some((tag) => tag.id === prohibited_tag)) {
+      removeTag({ id: prohibited_tag, value: prohibited_tag });
+    }
+    if ($selected && $selected.label) {
       let added_tag: Tag = {
-        id: $selected.value.tag,
-        value: $selected.value.tag,
+        id: $selected.value.id,
+        value: $selected.value.name,
       };
       if ($plugin) {
         added_tag = {
@@ -99,26 +178,22 @@
         };
       }
       if (!$tags.some((val) => val.id === added_tag.id)) {
-        addTag($selected.value.tag);
+        console.log($selected.value.id);
+        addTag($selected.value.id);
       }
     }
   }
 
-  $: filteredTags = $touchedInput
-    ? $areaStore
-        .filter(({ tag }) => {
-          const normalizedInput = $inputValue.toLowerCase();
-          return tag.toLowerCase().includes(normalizedInput);
-        })
-        .map((val) => ({ tag: val.tag, priority: val.area_priority }))
-    : $areaStore
-        .filter((val) => {
-          return (
-            !$tags.some((tag) => tag.id === val.tag) &&
-            val.tag !== prohibited_tag
-          );
-        })
-        .map((val) => ({ tag: val.tag, priority: val.area_priority }));
+  $: filteredTags = filterTags(
+    $touchedInput,
+    $inputValue,
+    $tags,
+    prohibited_tag,
+  );
+
+  onDestroy(() => {
+    unsub();
+  });
 </script>
 
 <div class="flex flex-col items-start justify-center gap-2 min-w-full">
@@ -191,8 +266,8 @@
               </div>
             {/if}
             <div class="pl-4">
-              <span class="font-medium">{tag.tag}</span>
-              <span class="block text-sm opacity-75">{tag.priority}</span>
+              <span class="font-medium">{tag.name}</span>
+              <span class="block text-sm opacity-75">{tag.sub_title}</span>
             </div>
           </li>
         {:else}

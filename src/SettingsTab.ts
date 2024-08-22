@@ -530,6 +530,19 @@ export class SettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Area Priority key')
+      .setDesc('the key that will be used to track the priority of the area in the frontmatter')
+      .addText((text) =>
+        text
+          .setPlaceholder(DEFAULT_SETTINGS.para.areas.priority_frontmatter)
+          .setValue(this.plugin.settings.para.areas.priority_frontmatter)
+          .onChange(
+            debounce(async (value) => {
+              this.plugin.settings.para.areas.priority_frontmatter = value;
+              await this.plugin.saveSettings();
+            }, 500)))
+
+    new Setting(containerEl)
       .setName('Area Template:')
       .setDesc("The template for the area's README file")
       .addText((text) => {

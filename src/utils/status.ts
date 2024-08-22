@@ -288,7 +288,10 @@ export class Status {
 
       default_status = settings.para.projects.project_statuses.find((stat) => stat.default)
     }
-    if (default_status) new Status(new StatusConfiguration(default_status.name, default_status.type, default_status.default));
+    if (default_status !== undefined) {
+      return new Status(new StatusConfiguration(default_status.name, default_status.type, default_status.default));
+
+    }
     return new Status(new StatusConfiguration('', StatusType.DONE));
   }
 

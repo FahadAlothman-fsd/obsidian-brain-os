@@ -5,7 +5,7 @@ import type {
   PluginManifest,
 } from 'obsidian';
 import "virtual:uno.css";
-import { getAPI, isPluginEnabled, DataviewApi } from 'obsidian-dataview';
+// import { getAPI, isPluginEnabled, DataviewApi } from 'obsidian-dataview';
 import {
   PeriodicView, PERIODIC_VIEW,
   ParaView, PARA_VIEW,
@@ -20,7 +20,6 @@ import {
   templateStore,
   // PARA
   PARAStore,
-  PARATags,
   projectStore, ProjectEntryStore,
   areaStore, AreaEntryStore,
   resourceStore, ResourceEntryStore,
@@ -31,8 +30,8 @@ import { addNewOptionsToUserSettings, DEFAULT_SETTINGS, SettingTab } from "./Set
 import { logMessage, renderError } from "./utils";
 import { I18N_MAP } from "./i18n";
 import { ERROR_MESSAGE } from "./constants";
-import { dataviewStore } from "./stores/pluginStore";
-import { Project, Area, Resource, Archive } from "./para";
+// import { dataviewStore } from "./stores/pluginStore";
+// import { Project, Area, Resource, Archive } from "./para";
 import { Bullet, Task, Date } from "./periodic";
 import { SelectPARAType } from "./modals";
 import { get } from "svelte/store";
@@ -42,54 +41,66 @@ import { SelectPARAToArchiveType } from "./modals/para/ArchivePARAModal";
 
 export default class BrainOS extends Plugin {
   settings!: BrainSettings;
-  dataview!: DataviewApi;
+  // dataview!: DataviewApi;
   locale: string;
   codeBlockViews!: Record<string, any>;
-  project!: Project;
-  area!: Area;
-  resource!: Resource;
-  archive!: Archive;
-  task!: Task;
-  file!: File;
-  bullet!: Bullet;
-  date!: Date;
+  // project!: Project;
+  // area!: Area;
+  // resource!: Resource;
+  // archive!: Archive;
+  // task!: Task;
+  // file!: File;
+  // bullet!: Bullet;
+  // date!: Date;
 
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
     this.locale = window.moment().locale()
-    if (!isPluginEnabled(app)) {
-      logMessage(
-        I18N_MAP[this.locale][`${ERROR_MESSAGE}NO_DATAVIEW_INSTALL`],
-        LogLevel.error
-      );
-      return;
-    }
-
-    const dataviewApi = getAPI(app) as DataviewApi;
-
-    if (!dataviewApi) {
-      logMessage(
-        I18N_MAP[this.locale][`${ERROR_MESSAGE}FAILED_DATAVIEW_API`],
-        LogLevel.error
-      );
-      return;
-    }
+    // if (!isPluginEnabled(app)) {
+    //   logMessage(
+    //     I18N_MAP[this.locale][`${ERROR_MESSAGE}NO_DATAVIEW_INSTALL`],
+    //     LogLevel.error
+    //   );
+    //   return;
+    // }
+    //
+    // const dataviewApi = getAPI(app) as DataviewApi;
+    //
+    // if (!dataviewApi) {
+    //   logMessage(
+    //     I18N_MAP[this.locale][`${ERROR_MESSAGE}FAILED_DATAVIEW_API`],
+    //     LogLevel.error
+    //   );
+    //   return;
+    // }
 
     this.app = app;
 
-    dataviewStore.set(dataviewApi)
-    this.dataview = dataviewApi;
+    // dataviewStore.set(dataviewApi)
+    // this.dataview = dataviewApi;
   }
   async loadSettings() {
     const data = await this.loadData()
     this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS))
 
-    console.log(data)
     if (data !== null && Object.entries(data).length !== 0) {
       this.settings = JSON.parse(JSON.stringify(data))
     }
+    // TODO: find a better way to iterate over the settings and fill them
+    // - maybe something to do with object keys and iterating over each key
+    // - checking if there are any other objects inside
+
+    // PARA
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.para.areas, this.settings.para.areas)
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.para.archives, this.settings.para.archives)
     addNewOptionsToUserSettings(DEFAULT_SETTINGS.para.projects, this.settings.para.projects)
     addNewOptionsToUserSettings(DEFAULT_SETTINGS.para.resources, this.settings.para.resources)
+    // Periodic
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.periodic.daily, this.settings.periodic.daily)
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.periodic.weekly, this.settings.periodic.weekly)
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.periodic.monthly, this.settings.periodic.monthly)
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.periodic.quarterly, this.settings.periodic.quarterly)
+    addNewOptionsToUserSettings(DEFAULT_SETTINGS.periodic.yearly, this.settings.periodic.yearly)
 
     await this.saveData(this.settings)
 
@@ -109,24 +120,25 @@ export default class BrainOS extends Plugin {
   async onload() {
     await this.loadSettings();
 
-    this.loadHelpers()
-    await this.initCodeBlockViews()
-    this.loadGlobalHelpers()
+    // this.loadHelpers()
+    // await this.initCodeBlockViews()
+    // this.loadGlobalHelpers()
     // this.setupCodeBlocks()
 
-    await this.setupBrainOSViews()
+
 
     this.app.workspace.onLayoutReady(async () => {
 
-      this.setupBrainOSEvents()
+
+      await this.setupBrainOSViews()
 
       await this.loadStores()
-
 
       // this.plugins.getPlugin("nldates-obsidian")
       // console.log(this.app.plugins.enabledPlugin.has('para-periodic'))
       this.setupBrainOSCommands()
       this.addSettingTab(new SettingTab(this.app, this));
+      this.setupBrainOSEvents()
 
     })
   }
@@ -139,12 +151,10 @@ export default class BrainOS extends Plugin {
     plugin.set(this);
     tagsStore.reload();
     templateStore.reload()
-    PARATags.reloadPARA()
     areaStore.loadEntries()
     projectStore.loadEntries()
     resourceStore.loadEntries()
     archiveStore.loadEntries()
-    archiveStore.subscribe((val) => console.log(val))
   }
 
 
@@ -154,16 +164,16 @@ export default class BrainOS extends Plugin {
       this.app.workspace.on('file-open', (file) => {
         if (file?.path.contains(".README.md")) {
           if (file.path.contains(this.settings.para.projects.folder)) {
-            console.log('in projects README')
+            projectStore.loadEntries()
             ProjectEntryStore.set(projectStore.getEntryByTFile(file))
           } else if (file.path.contains(this.settings.para.areas.folder)) {
-            console.log('in areas README')
+            areaStore.loadEntries()
             AreaEntryStore.set(areaStore.getEntryByTFile(file))
           } else if (file.path.contains(this.settings.para.resources.folder)) {
-            console.log('in resources README')
+            resourceStore.loadEntries()
             ResourceEntryStore.set(resourceStore.getEntryByTFile(file))
           } else if (file.path.contains(this.settings.para.archives.folder)) {
-            console.log('in archive README')
+            archiveStore.loadEntries()
           }
         } else if (get(ProjectEntryStore)) {
           ProjectEntryStore.set(undefined)
@@ -175,72 +185,11 @@ export default class BrainOS extends Plugin {
 
       })
 
-      this.app.vault.on('create', (file) => {
-        if (file instanceof TFolder) {
-          console.log(file)
-        }
-      })
-
-      // this.app.vault.on('modify', (file) => {
-      //   console.log(file)
-      //   if (file instanceof TFile) {
-      //     if (file.path.contains(".README.md")) {
-      //       if (file.path.contains(this.settings.para.projects.folder)) {
-      //         console.log('in projects README')
-      //         console.log(projectStore.getProjectByTFile(file))
-      //         ProjectEntryStore.set(projectStore.getProjectByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.areas.folder)) {
-      //         console.log('in areas README')
-      //         AreaEntryStore.set(areaStore.getAreaByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.resources.folder)) {
-      //         console.log('in resources README')
-      //         ResourceEntryStore.set(resourceStore.getResourceByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.archives.folder)) {
-      //         console.log('in archive README')
-      //       }
-      //     }
+      // this.app.vault.on('create', (file) => {
+      //   if (file instanceof TFolder) {
       //   }
       // })
 
-      // this.app.vault.on('delete', file => {
-      //   if (file instanceof TFile) {
-      //     if (file.path.contains(".README.md")) {
-      //       if (file.path.contains(this.settings.para.projects.folder)) {
-      //         console.log('in projects README')
-      //         console.log(projectStore.getProjectByTFile(file))
-      //         ProjectEntryStore.set(projectStore.getProjectByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.areas.folder)) {
-      //         console.log('in areas README')
-      //         AreaEntryStore.set(areaStore.getAreaByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.resources.folder)) {
-      //         console.log('in resources README')
-      //         ResourceEntryStore.set(resourceStore.getResourceByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.archives.folder)) {
-      //         console.log('in archive README')
-      //       }
-      //     }
-      //   }
-      // })
-
-      // this.app.vault.on('rename', file => {
-      //   if (file instanceof TFile) {
-      //     if (file.path.contains(".README.md")) {
-      //       if (file.path.contains(this.settings.para.projects.folder)) {
-      //         console.log('in projects README')
-      //         console.log(projectStore.getProjectByTFile(file))
-      //         ProjectEntryStore.set(projectStore.getProjectByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.areas.folder)) {
-      //         console.log('in areas README')
-      //         AreaEntryStore.set(areaStore.getAreaByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.resources.folder)) {
-      //         console.log('in resources README')
-      //         ResourceEntryStore.set(resourceStore.getResourceByTFile(file))
-      //       } else if (file.path.contains(this.settings.para.archives.folder)) {
-      //         console.log('in archive README')
-      //       }
-      //     }
-      //   }
-      // })
 
 
     }
@@ -292,64 +241,64 @@ export default class BrainOS extends Plugin {
 
   }
 
-  loadHelpers() {
-    this.task = new Task(this.app, this.settings, this.dataview, this.locale);
-    this.file = new File(this.app, this.settings, this.dataview, this.locale);
-    this.date = new Date(this.app, this.settings, this.file, this.locale);
-    this.bullet = new Bullet(this.app, this.settings, this.dataview, this.locale);
+  // loadHelpers() {
+  //   this.task = new Task(this.app, this.settings, this.dataview, this.locale);
+  //   this.file = new File(this.app, this.settings, this.dataview, this.locale);
+  //   this.date = new Date(this.app, this.settings, this.file, this.locale);
+  //   this.bullet = new Bullet(this.app, this.settings, this.dataview, this.locale);
+  //
+  //   this.project = new Project(
+  //     this.settings.para.projects.folder,
+  //     this.app,
+  //     this.settings,
+  //     this.file,
+  //     this.locale
+  //   );
+  //   this.area = new Area(
+  //     this.settings.para.areas.folder,
+  //     this.app,
+  //     this.settings,
+  //     this.file,
+  //     this.locale
+  //   );
+  //   this.resource = new Resource(
+  //     this.settings.para.resources.folder,
+  //     this.app,
+  //     this.settings,
+  //     this.file,
+  //     this.locale
+  //   );
+  //   this.archive = new Archive(
+  //     this.settings.para.archives.folder,
+  //     this.app,
+  //     this.settings,
+  //     this.file,
+  //     this.locale
+  //   );
+  //
+  //   PARAStore.set({
+  //     project: this.project,
+  //     area: this.area,
+  //     resources: this.resource,
+  //     archives: this.archive
+  //   })
+  // }
 
-    this.project = new Project(
-      this.settings.para.projects.folder,
-      this.app,
-      this.settings,
-      this.file,
-      this.locale
-    );
-    this.area = new Area(
-      this.settings.para.areas.folder,
-      this.app,
-      this.settings,
-      this.file,
-      this.locale
-    );
-    this.resource = new Resource(
-      this.settings.para.resources.folder,
-      this.app,
-      this.settings,
-      this.file,
-      this.locale
-    );
-    this.archive = new Archive(
-      this.settings.para.archives.folder,
-      this.app,
-      this.settings,
-      this.file,
-      this.locale
-    );
-
-    PARAStore.set({
-      project: this.project,
-      area: this.area,
-      resources: this.resource,
-      archives: this.archive
-    })
-  }
-
-  loadGlobalHelpers() {
-    const helpers = {
-      Project: this.project,
-      Area: this.area,
-      Resource: this.resource,
-      Archive: this.archive,
-      Task: this.task,
-      File: this.file,
-      Bullet: this.bullet,
-      Date: this.date,
-    };
-
-    // TODO: add this to the global namespace
-    (window as any).BrainOS = helpers;
-  }
+  // loadGlobalHelpers() {
+  //   const helpers = {
+  //     Project: this.project,
+  //     Area: this.area,
+  //     Resource: this.resource,
+  //     Archive: this.archive,
+  //     Task: this.task,
+  //     File: this.file,
+  //     Bullet: this.bullet,
+  //     Date: this.date,
+  //   };
+  //
+  //   // TODO: add this to the global namespace
+  //   (window as any).BrainOS = helpers;
+  // }
 
   setupCodeBlocks() {
 
@@ -387,29 +336,29 @@ export default class BrainOS extends Plugin {
     this.registerMarkdownCodeBlockProcessor('BrainOS', handler);
   }
 
-  async initCodeBlockViews() {
-    // TODO: fix this to correspond with the new workflow and structure of this plugin
-    this.codeBlockViews = {
-      // views by time -> time context -> periodic notes
-      ProjectListByTime: this.project.listByTime,
-      AreaListByTime: this.area.listByTime,
-      TaskRecordListByTime: this.task.recordListByTime,
-      TaskDoneListByTime: this.task.doneListByTime,
-      // views by tag -> topic context -> para
-      TaskListByTag: this.task.listByTag,
-      BulletListByTag: this.bullet.listByTag,
-      FileListByTag: this.file.listByTag,
-      ProjectListByTag: this.project.listByTag,
-      AreaListByTag: this.area.listByTag,
-      ResourceListByTag: this.resource.listByTag,
-      ArchiveListByTag: this.archive.listByTag,
-      // views by folder
-      ProjectListByFolder: this.project.listByFolder,
-      AreaListByFolder: this.area.listByFolder,
-      ResourceListByFolder: this.resource.listByFolder,
-      ArchiveListByFolder: this.archive.listByFolder,
-    };
-  }
+  // async initCodeBlockViews() {
+  //   // TODO: fix this to correspond with the new workflow and structure of this plugin
+  //   this.codeBlockViews = {
+  //     // views by time -> time context -> periodic notes
+  //     ProjectListByTime: this.project.listByTime,
+  //     AreaListByTime: this.area.listByTime,
+  //     TaskRecordListByTime: this.task.recordListByTime,
+  //     TaskDoneListByTime: this.task.doneListByTime,
+  //     // views by tag -> topic context -> para
+  //     TaskListByTag: this.task.listByTag,
+  //     BulletListByTag: this.bullet.listByTag,
+  //     FileListByTag: this.file.listByTag,
+  //     ProjectListByTag: this.project.listByTag,
+  //     AreaListByTag: this.area.listByTag,
+  //     ResourceListByTag: this.resource.listByTag,
+  //     ArchiveListByTag: this.archive.listByTag,
+  //     // views by folder
+  //     ProjectListByFolder: this.project.listByFolder,
+  //     AreaListByFolder: this.area.listByFolder,
+  //     ResourceListByFolder: this.resource.listByFolder,
+  //     ArchiveListByFolder: this.archive.listByFolder,
+  //   };
+  // }
 
 
   // Commands
