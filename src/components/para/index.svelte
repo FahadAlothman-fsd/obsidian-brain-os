@@ -4,34 +4,53 @@
   import AreasTab from "./areas/index.svelte";
   import ResourcesTab from "./resources/index.svelte";
   import ArchivesTab from "./archives/index.svelte";
-  import type { TabsType } from "../../types";
+  import type { TabsType, tabIdType } from "../../types";
+  import {
+    ProjectEntryStore,
+    AreaEntryStore,
+    ResourceEntryStore,
+  } from "../../stores";
 
   const triggers: TabsType = [
     {
-      id: "tab-1",
+      id: "projects-tab",
       title: "Projects",
       icon: "i-bxs-pen text-4 bg-magnum-400",
       component: ProjectsTab,
     },
     {
-      id: "tab-2",
+      id: "areas-tab",
       title: "Areas",
       icon: "i-bxs-package text-4 bg-magnum-400",
       component: AreasTab,
     },
     {
-      id: "tab-3",
+      id: "resources-tab",
       title: "Resources",
       icon: "i-bxs-book text-4 bg-magnum-400",
       component: ResourcesTab,
     },
     {
-      id: "tab-4",
+      id: "archives-tab",
       title: "Archives",
       icon: "i-bxs-archive text-4 bg-magnum-400",
       component: ArchivesTab,
     },
-  ];
+  ] as const;
+
+  let tab: tabIdType<typeof triggers> = "project-tab";
+
+  $: if ($ProjectEntryStore) {
+    tab = "project-tab";
+  }
+
+  $: if ($AreaEntryStore) {
+    tab = "area-tab";
+  }
+
+  $: if ($ResourceEntryStore) {
+    tab = "resources-tab";
+  }
 </script>
 
 <Tabs {triggers} />

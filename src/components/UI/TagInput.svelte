@@ -105,7 +105,15 @@
           name: area.tag,
           sub_title: area.area_priority,
         });
-        form_field.set(input_field_values);
+        if (input_field_values.length === 0) {
+          form_field.update((val) => ({
+            ...val,
+            dirty: true,
+            value: input_field_values,
+          }));
+        } else {
+          form_field.set(input_field_values);
+        }
       }
     }
   };
@@ -115,8 +123,6 @@
     initialTags =
       val.value.map((val) => ({ id: val.id, value: val.name })) || [];
   });
-
-  console.log(prohibited_tag);
 
   // TODO: Changes to TagsInput
   // - make it dynamic such that any multiselect usage will use this component
@@ -129,7 +135,6 @@
     defaultTags: initialTags,
     unique: true,
     add(tag) {
-      console.log(addTagToInput(tag, inputField));
       let added_tag: Tag = addTagToInput(tag, inputField) || {
         id: tag,
         value: tag,
@@ -178,7 +183,6 @@
         };
       }
       if (!$tags.some((val) => val.id === added_tag.id)) {
-        console.log($selected.value.id);
         addTag($selected.value.id);
       }
     }

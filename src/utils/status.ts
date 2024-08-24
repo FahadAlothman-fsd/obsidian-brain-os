@@ -10,8 +10,9 @@ export enum StatusType {
   NEW = "NEW",
   // Active
   IN_PROGRESS = "IN_PROGRESS",
-  DONE = "DONE",
+  POST_PROCESSING = "POST_PROCESSING",
   // Archive
+  DONE = "DONE",
   ON_HOLD = "ON_HOLD",
   CANCELLED = "CANCELLED",
   IRRELEVANT = "IRRELEVANT", // Resource/Area
@@ -98,7 +99,7 @@ export class StatusConfiguration {
     // this.availableAsCommand = availableAsCommand;
     this.type = type;
     this.default_status = default_status
-    this.id = `${this.name}-${this.type}`
+    this.id = `${this.name.toLowerCase().replace(' ', '_')}-${this.type}`
   }
 }
 
@@ -241,8 +242,11 @@ export class Status {
       case StatusType.IN_PROGRESS:
         prefix = '2';
         break;
-      case StatusType.DONE:
+      case StatusType.POST_PROCESSING:
         prefix = '3';
+        break;
+      case StatusType.DONE:
+        prefix = '4';
         break;
       case StatusType.ON_HOLD:
         prefix = '5';
@@ -382,13 +386,13 @@ export class StatusValidator {
   /**
    * Determine whether the date in this object is valid, and return error message(s) for display if not.
    */
-  public validate(plugin: BrainOS, statusConfiguration: StatusConfiguration, type: typeof PROJECT | typeof RESOURCE): string[] {
+  public validate(plugin: BrainOS, statusConfiguration: StatusConfiguration, type: typeof PROJECT | typeof RESOURCE, original: StatusConfiguration): string[] {
     const errors: string[] = [];
 
     // Messages are added in the order fields are shown when editing statuses.
     errors.push(...this.validateName(statusConfiguration));
     errors.push(...this.validateType(statusConfiguration.type))
-    errors.push(...this.validateDefault(plugin, statusConfiguration, type))
+    errors.push(...this.validateDefault(plugin, statusConfiguration, type, original))
 
     return errors;
   }
@@ -441,7 +445,7 @@ export class StatusValidator {
     return errors;
   }
 
-  public validateDefault(plugin: BrainOS, statusConfiguration: StatusConfiguration, type: typeof PROJECT | typeof RESOURCE) {
+  public validateDefault(plugin: BrainOS, statusConfiguration: StatusConfiguration, type: typeof PROJECT | typeof RESOURCE, original: StatusConfiguration) {
     const errors: string[] = [];
     let statuses: statusType[] = []
     if (type === PROJECT) {
@@ -450,7 +454,7 @@ export class StatusValidator {
       statuses = plugin.settings.para.resources.resource_statuses
 
     }
-    const exisitingDefault = statuses.find((val) => val.default && val.id !== statusConfiguration.id)
+    const exisitingDefault = statuses.find((val) => val.default && val.id !== original.id)
     if (exisitingDefault && statusConfiguration.default_status) {
       errors.push(`${statusConfiguration.name} cannot be the default, as ${exisitingDefault.name} is already the default ${type.toLowerCase()} status`)
 

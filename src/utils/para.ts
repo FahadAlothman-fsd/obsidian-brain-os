@@ -162,8 +162,16 @@ export function removeTagFromInput(tag: string, form_field: ReturnType<typeof fi
   if (brainOS) {
     const area = areaStore.getEntryByTag(tag);
     if (area) {
-      const input_field_values = get(form_field).value;
-      form_field.set(input_field_values.filter((val) => val.id !== area.tag));
+      const input_field_values = get(form_field).value.filter((val) => val.id !== area.tag);
+      if (input_field_values.length === 0) {
+        form_field.update((val) => ({
+          ...val,
+          dirty: true,
+          value: input_field_values,
+        }));
+      } else {
+        form_field.set(input_field_values);
+      }
     }
   }
 };
@@ -178,11 +186,9 @@ export function addTemplateToInput(
 
   const template = templates.find((temp) => temp.path === tag);
   const brainOS = get(plugin)
-  console.log(tag)
   let value = tag
   if (brainOS) {
     value = getRelativePath(brainOS.settings.otherTemplates, tag)
-    console.log(tag)
     if (template) {
       const input_field_values = get(form_field).value;
       form_field.set([
@@ -208,8 +214,16 @@ export function removeTemplateFromInput(tag: string, form_field: ReturnType<type
   if (brainOS) {
     const template = templates.find((temp) => temp.path === tag);
     if (template) {
-      const input_field_values = get(form_field).value;
-      form_field.set(input_field_values.filter((val) => val.id !== template.path));
+      const input_field_values = get(form_field).value.filter((val) => val.id !== template.path);
+      if (input_field_values.length === 0) {
+        form_field.update((val) => ({
+          ...val,
+          dirty: true,
+          value: input_field_values,
+        }));
+      } else {
+        form_field.set(input_field_values);
+      }
     }
   }
 };
@@ -523,10 +537,8 @@ export const createPARAFile = async (values: createPARADataType, app: App, setti
     })
       .filter((link) => link !== undefined)
 
-    if (templates && templates.length > 0) {
 
-      metadata[settings.other_templates_frontmatter] = templates
-    }
+    metadata[settings.other_templates_frontmatter] = templates
   }
 
 

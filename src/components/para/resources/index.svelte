@@ -1,14 +1,14 @@
 <script lang="ts">
   import Accordian from "../../UI/Accordian.svelte";
-  import CreateResource from "./CreateResource.svelte";
+  import CreateEditResource from "./CreateEditResource.svelte";
   import ListResources from "./ListResources.svelte";
   import { ResourceEntryStore } from "../../../stores";
 
-  const sections = [
+  let sections = [
     {
       id: "create-resource",
       title: "Create Resource",
-      component: CreateResource,
+      component: CreateEditResource,
       props: {},
     },
     // TODO: add an edit resource that uses the same component as create but fills in the info
@@ -23,46 +23,75 @@
   ];
 
   $: if ($ResourceEntryStore) {
-    sections[0]["id"] = "edit-resource";
-    sections[0]["title"] = "Edit Resource";
-    sections[0]["props"] = { resource: $ResourceEntryStore };
+    sections = [
+      ...sections.filter((val) => val.id !== "edit-resource"),
+      {
+        id: "edit-resource",
+        title: `Edit ${$ResourceEntryStore.README.basename.split(".")[0]}`,
+        component: CreateEditResource,
+        props: { resource: $ResourceEntryStore },
+      },
+    ];
   } else {
-    sections[0]["id"] = "create-resource";
-    sections[0]["title"] = "Create Resource";
-    sections[0]["props"] = {};
+    sections = sections.filter((val) => val.id !== "edit-area");
   }
+
+  let stats = {
+    archived: {
+      cancelled: 0,
+      done: 0,
+      postponed: 0,
+    },
+    active: {
+      new: 0,
+      in_progress: 0,
+    },
+  };
 </script>
 
 <section class="space-y-2">
   <!-- Resource Header -->
 
-  <div class="flex flex-row min-w-full rounded-lg bg-teal-500 p-2">
-    <!-- Resource  Header + buttons (add, delete, etc [some will only be available if a project is opened]) -->
-    <div class="w-1/3 grid grid-cols-2 gap-2">
-      <span class="col-span-2 text-center p-2 text-2xl">Resources</span>
-      <button
-        type="button"
-        class="clickable-icon col-span-2 mx-auto rounded-full p-1.5 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-      >
-        <i class="i-ph-plus-bold text-4" />
-      </button>
-      <!-- <button -->
-      <!--   type="button" -->
-      <!--   class="clickable-icon rounded-full p-1.5 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600" -->
-      <!-- > -->
-      <!--   <i class="i-ph-minus-bold text-4" /> -->
-      <!-- </button> -->
+  <div class="flex flex-row min-w-full rounded-lg p-2">
+    <!-- Resource Header Title + badges with statuses  -->
+    <div class="w-2/3 grid grid-rows-2 gap-2">
+      <span class="text-start p-2 text-2xl">Resources</span>
+
+      <div class="flex flex-row gap-2 items-center justify-start">
+        <span
+          class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20"
+          >New {stats.active.new}</span
+        >
+
+        <span
+          class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20"
+          >In Progress {stats.active.in_progress}</span
+        >
+      </div>
     </div>
-    <!-- Resource Priority List tags -->
-    <div class="w-2/3"></div>
+    <!-- Resource statuses  -->
+    <div class="flex flex-row gap-1 w-1/3 items-center justify-center">
+      <div class="flex flex-col gap-2">
+        <span class="text-center p-2 text-md">Archived</span>
+
+        <span
+          class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20"
+          >Done {stats.archived.postponed}</span
+        >
+        <span
+          class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20"
+          >Postponed {stats.archived.postponed}</span
+        >
+        <span
+          class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-400 ring-1 ring-inset ring-gray-400/20"
+          >Cancelled {stats.archived.cancelled}</span
+        >
+      </div>
+    </div>
   </div>
 
   <!-- Interchangable Area -->
   <div>
-    <!-- Opened project if a project README file is opened and this view is open or picked from project priority lish  -->
-
     <Accordian items={sections} />
-    <!-- Active Resources with stats -->
-    <!-- <ScrollArea {flavors} /> -->
   </div>
 </section>

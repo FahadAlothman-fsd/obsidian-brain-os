@@ -153,7 +153,7 @@ export class ArchivePARAEntryNoteModal extends Modal {
               return []
             })();
             if (errors.length > 0) {
-              const message = errors.join('\n\n') + '\n\n' + 'Fix errors before saving.';
+              errors.join('\n\n') + '\n\n' + 'Fix errors before saving.';
               // console.debug(message);
               const { containerEl } = this
 
@@ -257,7 +257,7 @@ export class selectPARAEntryModal extends FuzzySuggestModal<PARAEntry> {
             await this.app.fileManager.renameFile(PAR.folder_name, `${folder_path}/${PAR.folder_name.name}`)
           } catch (error) {
             if (error instanceof Error) {
-              console.log(error)
+              new Notice(error.message)
             }
 
           } finally {

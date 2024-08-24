@@ -4,7 +4,8 @@
   import ScrollArea from "../../UI/ScrollArea.svelte";
   import { TFile } from "obsidian";
   import { get } from "svelte/store";
-  import type { ComponentProps, ComponentType } from "svelte";
+  import type { ComponentProps } from "svelte";
+  import { StatusType } from "../../../utils";
 
   let props: ComponentProps<Accordian> = {
     items: [],
@@ -26,11 +27,34 @@
               }
             }
           },
-          items: $archiveStore.archived_projects.map((entry) => {
+          items: $archiveStore.archived_projects.map((project) => {
+            const brainOS = get(plugin);
             return {
-              id: entry.README.path.replace("/", "-"),
-              link: entry.README.path,
-              label: entry.README.basename,
+              id: project.tag,
+              link: project.README.path,
+              label: project.tag.substring(project.tag.lastIndexOf("/") + 1),
+              end_chips: [
+                {
+                  id: "project-area-badge",
+                  text: project.tag.substring(
+                    brainOS ? brainOS.settings.para.areas.prefix.length : 0,
+                    project.tag.lastIndexOf("/"),
+                  ),
+                  color: "yellow",
+                },
+                {
+                  id: "project-status-badge",
+                  text: project.project_status.name,
+                  color: ((type: typeof project.project_status.type) => {
+                    switch (type) {
+                      case StatusType.NEW:
+                        return "green";
+                      default:
+                        return "blue";
+                    }
+                  })(project.project_status.type),
+                },
+              ],
             };
           }),
         },
@@ -49,11 +73,27 @@
               }
             }
           },
-          items: $archiveStore.archived_areas.map((entry) => {
+          items: $archiveStore.archived_areas.map((area) => {
+            const brainOS = get(plugin);
+            let sub_area_chip;
+            let offset = 0;
+            if (area.tag.split("/").length === 1) {
+              offset = brainOS ? brainOS.settings.para.areas.prefix.length : 0;
+            } else {
+              sub_area_chip = {
+                id: "sub_area-area-badge",
+                text: area.tag.substring(
+                  brainOS ? brainOS.settings.para.areas.prefix.length : 0,
+                  area.tag.lastIndexOf("/"),
+                ),
+                color: "yellow",
+              };
+            }
             return {
-              id: entry.README.path.replace("/", "-"),
-              link: entry.README.path,
-              label: entry.README.basename,
+              id: area.tag,
+              link: area.README.path,
+              label: area.tag.substring(area.tag.lastIndexOf("/") + 1 + offset),
+              end_chips: sub_area_chip ? [sub_area_chip] : [],
             };
           }),
         },
@@ -73,18 +113,27 @@
               }
             }
           },
-          items: $archiveStore.archived_resources.map((entry) => {
+          items: $archiveStore.archived_resources.map((resource) => {
+            const brainOS = get(plugin);
             return {
-              id: entry.README.path.replace("/", "-"),
-              link: entry.README.path,
-              label: entry.README.basename,
+              id: resource.tag,
+              link: resource.README.path,
+              label: resource.tag.substring(
+                brainOS ? brainOS.settings.para.resources.prefix.length : 0,
+              ),
+              end_chips: [
+                {
+                  id: `${resource.tag.substring(brainOS ? brainOS.settings.para.resources.prefix.length : 0)}`,
+                  text: `${resource.resources?.length}` || "0",
+                  color: "yellow",
+                },
+              ],
             };
           }),
         },
       },
     ];
   }
-  let items: typeof props.items = [];
 </script>
 
 <section class="space-y-2">

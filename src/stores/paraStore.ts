@@ -81,10 +81,11 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
 
   function loadEntries() {
 
-    if (_app && _settings) {
+    if (_app && _settings && _areas) {
 
       const settings = _settings
       const app = _app
+      const areas = _areas
       const projectREADMEs = getParaREADMEFiles(app, settings.para.projects.folder)
 
       if (projectREADMEs.length > 0) {
@@ -122,7 +123,7 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
               if (file.frontmatter.hasOwnProperty(settings.para.projects.status_frontmatter)) {
 
                 const file_status: string = file.frontmatter[settings.para.projects.status_frontmatter]
-                const stat: statusType | undefined = settings.para.projects.project_statuses.find((status) => status.name === file_status)
+                const stat: statusType | undefined = settings.para.projects.project_statuses.find((status) => status.id === file_status)
                 if (stat) {
 
                   projectEntry.project_status = stat
@@ -140,11 +141,11 @@ const ProjectStore = (areaStore: ReturnType<typeof AreaStore>) => {
                 && isArrayOfStrings(file.frontmatter[settings.para.projects.related_areas_frontmatter])) {
                 // TODO: search the tag of each area in the related_areas frontmatter 
                 // then find it then add it to the list of tags
-                let areas: AreaEntryType[] = file.frontmatter[settings.para.projects.related_areas_frontmatter]
-                  .map((area_tag: string) => _areas.find((area_entry) => area_entry.tag === area_tag))
+                let related_areas: AreaEntryType[] = file.frontmatter[settings.para.projects.related_areas_frontmatter]
+                  .map((area_tag: string) => areas.find((area_entry) => area_entry.tag === area_tag))
                   .filter((ar: AreaEntryType | undefined) => !!ar)
 
-                projectEntry.related_areas = areas
+                projectEntry.related_areas = related_areas
 
               }
 
@@ -456,6 +457,7 @@ const ResourceStore = () => {
                 }
 
                 if (resource_item instanceof TFolder) {
+                  console.log("found folder")
 
                   const entryFile = resource_item.children.find((val) => val instanceof TFile && val.path.match(/(.*\.)README\.md/)) as TFile
                   let resourceItem: ResourceEntryItemType | undefined
@@ -520,7 +522,9 @@ const ResourceStore = () => {
                         }
 
                       }
+                      console.log("adding to resources", resourceItem)
                       resourceEntry.resources?.push(resourceItem)
+                      console.log(resourceEntry.resources)
                     }
 
                   }
@@ -564,6 +568,7 @@ const ResourceStore = () => {
               }
             }
 
+            console.log(resourceEntry)
             return resourceEntry
           }
         }).filter((val => !!val))

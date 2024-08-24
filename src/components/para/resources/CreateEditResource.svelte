@@ -3,34 +3,52 @@
   import { get, writable } from "svelte/store";
   import { form, field } from "svelte-forms";
   import { required } from "svelte-forms/validators";
+  import { plugin, ResourceEntryStore, tagsStore } from "../../../stores";
   import {
-    plugin,
-    ResourceEntryStore,
-    resourceStore,
-    tagsStore,
-  } from "../../../stores";
-  import { tagExists } from "../../../utils";
-  import Input from "../../UI/Input.svelte";
-  import TemplateInput from "../../UI/TemplateInput.svelte";
-  import { createPARAFile, type createPARADataType } from "../../../utils/para";
+    tagExists,
+    getRelativePath,
+    filterTemplates,
+    addTemplateToInput,
+    removeTemplateFromInput,
+    createPARAFile,
+    type createPARADataType,
+  } from "../../../utils";
+  import { Input, TagInput } from "../../UI";
   import { RESOURCE } from "../../../constants";
   import type { ResourceEntryType } from "../../../types/paraTypes";
   import { TFile } from "obsidian";
+  import { onDestroy } from "svelte";
 
   export let resource: ResourceEntryType | undefined;
 
+  function checkTagExistance() {
+    return (tag: string) => {
+      let value = tag;
+      const tags = get(tagsStore);
+      if (resource) {
+        return {
+          valid: !tagExists(tags, value) || resource.tag === tag,
+          name: "tag_already_taken",
+        };
+      }
+
+      return {
+        valid: !tagExists(tags, value),
+        name: "tag_already_taken",
+      };
+    };
+  }
+
+  // TODO: make sure that the user picks an area first, right now if they don't pick anything they can still put dumb shit
   const resourceTag = field(
     "resource_tag",
-    resource
-      ? resource.tag.substring(
-          $plugin ? $plugin.settings.para.resources.prefix.length : 0,
-        )
-      : "",
-    [required()],
+    resource ? resource.tag : "",
+    [required(), checkTagExistance()],
     {
       validateOnChange: true,
     },
   );
+
   const resourceFolder = field(
     "resource_folder",
     resource ? resource.folder_name?.name : "",
@@ -39,6 +57,7 @@
       validateOnChange: true,
     },
   );
+
   const resourceIndex = field(
     "resource_index",
     resource ? resource.README.name : "",
@@ -47,16 +66,40 @@
       validateOnChange: true,
     },
   );
-  const resourceTemplates = field<TFile[]>(
+
+  type TagComboInputType = {
+    id: string; // will be used as the thing to retrieve the information the consumer of this componenet wants
+    name: string;
+    sub_title: string;
+  };
+
+  const resourceTemplates = field<TagComboInputType[]>(
     "resource_templates",
-    resource ? Array.from(resource.related_templates) : [],
+    resource
+      ? resource.related_templates.map((val) => {
+          const brainOS = get(plugin);
+
+          let name = val.name;
+          let sub_title = "";
+          if (brainOS) {
+            name = getRelativePath(brainOS.settings.otherTemplates, val.path);
+          }
+          if (val.parent) {
+            sub_title = val.parent.name;
+          }
+          return {
+            id: val.path,
+            name: name,
+            sub_title: sub_title,
+          };
+        })
+      : [],
     [],
     {
       validateOnChange: true,
     },
   );
 
-  // TODO: add a templates tagsinput like but the suggestions being templates for this resource
   const createResourceForm = form(
     resourceTag,
     resourceFolder,
@@ -64,20 +107,7 @@
     resourceTemplates,
   );
 
-  $: if (
-    (!resource && $resourceTemplates.value.length > 0) ||
-    (resource &&
-      $resourceTemplates.value.length !== resource.related_templates.length)
-  ) {
-    resourceTemplates.update((val) => {
-      return {
-        ...val,
-        dirty: true,
-      };
-    });
-  }
-
-  resourceTag.subscribe((resTag) => {
+  const unsub = resourceTag.subscribe((resTag) => {
     if (resTag.value.length > 0 && resTag.dirty) {
       const resourceName = resTag.value.substring(
         resTag.value.lastIndexOf("/") + 1,
@@ -85,23 +115,13 @@
       if (resourceName === "") {
         resourceFolder.set("");
         resourceIndex.set("");
-      } else if (!tagExists($tagsStore, resTag.value)) {
-        resourceFolder.set(resourceName);
+      } else {
         resourceIndex.set(`${resourceName}.README.md`);
-        if ($plugin) {
-          if (resTag.value.startsWith($plugin.settings.para.resources.prefix)) {
-            resourceFolder.set(
-              resTag.value
-                .replace(/[ /]/g, "-")
-                .substring($plugin.settings.para.areas.prefix.length),
-            );
-            resourceIndex.set(`${resourceName}.README.md`);
-          } else {
-            resourceFolder.set(resTag.value.replace(/[ /]/g, "-"));
-            resourceIndex.set(`${resourceName}.README.md`);
-          }
-        }
+        resourceFolder.set(`${resourceName}`);
       }
+    } else if (resTag.dirty && resTag.value === "") {
+      resourceFolder.set("");
+      resourceIndex.set("");
     }
   });
 
@@ -109,12 +129,20 @@
 
   const handleCreateResource = async () => {
     isLoading.set(true);
-    createResourceForm.validate();
-    console.log(createResourceForm.summary());
+    await createResourceForm.validate();
     const formData = createResourceForm.summary();
     const brainOS = get(plugin);
     // TODO: display error here indicating that the brainOS wasn't added correctly
-    if (!brainOS) return;
+    if (!brainOS) {
+      // err Notice
+      isLoading.set(false);
+      return;
+    }
+
+    if (!$createResourceForm.valid) {
+      isLoading.set(false);
+      return;
+    }
 
     let data: createPARADataType = {
       para_tag: "",
@@ -122,7 +150,6 @@
       folder_path: "",
     };
     if (formData["resource_tag"]) {
-      // TODO: check that the resource tag doesn't exist
       if (
         $plugin &&
         formData["resource_tag"].startsWith(
@@ -137,7 +164,7 @@
     }
 
     if (formData["resource_folder"]) {
-      // TODO: check that the resource folder doesn't exist inside the projects folder
+      // TODO: check that the project folder doesn't exist inside the projects folder
       data.folder_path = formData["resource_folder"];
     }
 
@@ -150,7 +177,6 @@
       formData["resource_templates"] &&
       formData["resource_templates"].length > 0
     ) {
-      // TODO: check that the main area is not tagged here
       data.related_templates = formData["resource_templates"];
     }
 
@@ -159,7 +185,9 @@
       data.para_tag !== "" &&
       data.folder_path !== ""
     ) {
-      console.log(data);
+      // TODO: make createPARAFile return a status of the form
+      // success: created, project TFile
+      // failed: not created, status on why it wasn't created
       const file = await createPARAFile(
         data,
         brainOS.app,
@@ -168,15 +196,8 @@
       );
       createResourceForm.reset();
 
-      resourceStore.loadResourceEntires();
-      if ($ResourceEntryStore) {
-        ResourceEntryStore.set(
-          resourceStore.getResourceByTag($ResourceEntryStore.tag),
-        );
-        console.log($ResourceEntryStore);
-      }
-
       if (file instanceof TFile) {
+        ResourceEntryStore.set(undefined);
         brainOS.app.workspace.getLeaf().openFile(file);
       }
     } else {
@@ -184,36 +205,43 @@
     }
     isLoading.set(false);
   };
+
+  onDestroy(unsub);
 </script>
 
 <div class="flex flex-col gap-3 p-2">
   <Input
     inputField={resourceTag}
     title={"Tag"}
-    placeholder={"#article..."}
-    error={$createResourceForm.hasError("resource_tag.required")}
+    placeholder={"books"}
+    disabled={resource !== undefined}
   />
   <Input
     title={"Folder"}
-    placeholder={"articles..."}
+    placeholder={"resource..."}
     inputField={resourceFolder}
-    error={$createResourceForm.hasError("resource_folder.required")}
+    disabled={resource !== undefined}
   />
   <Input
     title={"Entry"}
     placeholder={"resource.README.md..."}
     inputField={resourceIndex}
-    error={$createResourceForm.hasError("resource_index.required")}
+    disabled={resource !== undefined}
   />
   <hr />
-  <TemplateInput
+
+  <TagInput
     title={"Resource Templates"}
-    placeholder={"fiction-books.md"}
+    placeholder="live-session.md"
     inputField={resourceTemplates}
+    addTagToInput={addTemplateToInput}
+    filterTags={filterTemplates}
+    removeTagFromInput={removeTemplateFromInput}
   />
+
   <button
     type="button"
-    disabled={!$createResourceForm.valid || !$createResourceForm.dirty}
+    disabled={!$createResourceForm.valid}
     on:click={handleCreateResource}
     class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-indigo-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
   >
@@ -230,9 +258,23 @@
           clip-rule="evenodd"
         />
       </svg>
-      Create Resource
+      {#if resource === undefined}
+        Create Project
+      {:else}
+        Save Changes
+      {/if}
     {:else}
       <Circle3 size="40" unit="px" duration="1s" />
     {/if}
   </button>
+
+  {#if resource === undefined}
+    <button
+      type="button"
+      on:click={() => createResourceForm.reset()}
+      class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-red px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+    >
+      Reset Form
+    </button>
+  {/if}
 </div>

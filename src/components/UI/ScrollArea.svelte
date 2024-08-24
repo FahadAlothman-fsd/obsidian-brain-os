@@ -1,11 +1,11 @@
 <script lang="ts">
   import { createScrollArea, melt } from "@melt-ui/svelte";
-  import type { Writable, writable } from "svelte/store";
 
   type itemType = {
     id: string;
     label: string;
     link?: string;
+    end_chips: { text: string; color: string }[];
   };
   export let items: itemType[] = [];
 
@@ -30,20 +30,33 @@
 
 <div
   use:melt={$root}
-  class="relative h-72 min-w-full overflow-hidden rounded-md border bg-white text-magnum-900 shadow-lg"
+  class="relative h-72 min-w-full overflow-hidden rounded-md border bg-stone-500 text-magnum-900 shadow-lg"
 >
   <div use:melt={$viewport} class="h-full w-full rounded-[inherit]">
     <div use:melt={$content}>
       <div class="p-4">
         {#each items as item (item.id)}
-          <div class="text-sm">
-            {#if item.link}
-              <a href="#" on:click={() => handleLinkClick(item.link ?? "")}>
+          <div class=" flex flex-row justify-between text-sm">
+            <div>
+              {#if item.link}
+                <a
+                  class="text-magnum-900 hover:text-magnum-400"
+                  on:click={() => handleLinkClick(item.link ?? "")}
+                >
+                  {item.label}
+                </a>
+              {:else}
                 {item.label}
-              </a>
-            {:else}
-              {item.label}
-            {/if}
+              {/if}
+            </div>
+            <div class="flex flex-row justify-evenly gap-2">
+              {#each item.end_chips as chip}
+                <span
+                  class={`inline-flex items-center rounded-md bg-${chip.color}-400/10 px-2 py-1 text-xs font-medium text-${chip.color}-400 ring-1 ring-inset ring-${chip.color}-400/20`}
+                  >{chip.text}</span
+                >
+              {/each}
+            </div>
           </div>
           <div role="separator" class="my-2 h-px w-full bg-magnum-600" />
         {/each}

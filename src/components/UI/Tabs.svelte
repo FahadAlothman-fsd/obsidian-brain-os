@@ -10,7 +10,7 @@
     elements: { root, list, content, trigger },
     states: { value },
   } = createTabs({
-    defaultValue: "tab-1",
+    autoSet: true,
   });
 
   let className =

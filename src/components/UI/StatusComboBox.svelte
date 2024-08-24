@@ -11,6 +11,7 @@
   import type { field } from "svelte-forms";
   import { plugin } from "../../stores";
   import type { statusType } from "../../types/paraTypes";
+  import { StatusType } from "../../utils";
 
   // TODO: make this so the parent component passes the options
   export let title = "Label";
@@ -28,30 +29,13 @@
 
   $: if ($inputField.value) {
     if (!$selected || ($selected && $selected.value !== $inputField.value)) {
-      console.log(
-        "in changing default and input value",
-        $selected,
-        toOption($inputField.value),
-        $selected && $selected !== toOption($inputField.value),
-      );
       defaultSelected = toOption($inputField.value);
       inputValue.set($inputField.value.name);
     }
   }
 
-  $: console.log($inputValue);
-  // $: if ($inputValue && $inputValue !== $inputField.value && $selected && ) {
-  //
-  // }
-
   $: if (!$open) {
     if ($selected && $selected.value !== $inputField.value) {
-      console.log(
-        "in changing field and input value",
-        $selected.value,
-        $inputField.value,
-        $selected && $selected.value !== $inputField.value,
-      );
       inputField.set($selected.value);
       $inputValue = $selected.label ?? "";
     }
@@ -65,16 +49,32 @@
     defaultSelected,
   });
 
-  $: console.log($selected);
-
   $: filteredTags =
     $touchedInput && $plugin
-      ? $plugin.settings.para.projects.project_statuses.filter(({ name }) => {
-          const normalizedInput = $inputValue.toLowerCase();
-          return name.toLowerCase().includes(normalizedInput);
-        })
+      ? $plugin.settings.para.projects.project_statuses
+          .filter(
+            ({ type }) =>
+              !(
+                type === StatusType.ON_HOLD ||
+                type === StatusType.DONE ||
+                type === StatusType.IRRELEVANT ||
+                type === StatusType.CANCELLED
+              ),
+          )
+          .filter(({ name }) => {
+            const normalizedInput = $inputValue.toLowerCase();
+            return name.toLowerCase().includes(normalizedInput);
+          })
       : $plugin
-        ? $plugin.settings.para.projects.project_statuses
+        ? $plugin.settings.para.projects.project_statuses.filter(
+            ({ type }) =>
+              !(
+                type === StatusType.ON_HOLD ||
+                type === StatusType.DONE ||
+                type === StatusType.IRRELEVANT ||
+                type === StatusType.CANCELLED
+              ),
+          )
         : [];
 </script>
 

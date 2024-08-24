@@ -432,7 +432,7 @@ export class SettingTab extends PluginSettingTab {
 
                 const newStatus = modal.statusConfiguration()
                 this.plugin.settings.para.projects.project_statuses.push({
-                  id: `${newStatus.name}-${newStatus.type}`,
+                  id: newStatus.id,
                   name: newStatus.name,
                   type: newStatus.type,
                   default: newStatus.default_status,
@@ -472,7 +472,7 @@ export class SettingTab extends PluginSettingTab {
       info.append(infoDiv)
       const status = new Setting(containerEl)
         .setName(info)
-        .setDesc(`ID: ${project_status.name}-${project_status.type}`)
+        .setDesc(`ID: ${project_status.id}`)
         .addExtraButton((cb) => {
           cb.setIcon("pencil")
             .setTooltip("Modify")
@@ -647,7 +647,7 @@ export class SettingTab extends PluginSettingTab {
 
                 const newStatus = modal.statusConfiguration()
                 this.plugin.settings.para.resources.resource_statuses.push({
-                  id: `${newStatus.name}-${newStatus.type}`,
+                  id: newStatus.id,
                   name: newStatus.name,
                   type: newStatus.type,
                   default: newStatus.default_status,
@@ -681,7 +681,7 @@ export class SettingTab extends PluginSettingTab {
       info.append(infoDiv)
       new Setting(containerEl)
         .setName(info)
-        .setDesc(`ID: ${resource_status.name}-${resource_status.type}`)
+        .setDesc(`ID: ${resource_status.id}`)
         .addExtraButton((cb) => {
           cb.setIcon("pencil")
             .setTooltip("Modify")
@@ -696,7 +696,7 @@ export class SettingTab extends PluginSettingTab {
 
                   this.plugin.settings.para.resources.resource_statuses[index].type = newStatus.type;
                   this.plugin.settings.para.resources.resource_statuses[index].name = newStatus.name;
-                  this.plugin.settings.para.resources.resource_statuses[index].id = `${newStatus.name}-${newStatus.type}`
+                  this.plugin.settings.para.resources.resource_statuses[index].id = newStatus.id
                   this.plugin.settings.para.resources.resource_statuses[index].default = newStatus.default_status
                   this.plugin.saveSettings();
                   this.display();

@@ -409,7 +409,7 @@ async function processFrontmatter(app: App,
       for (const metadata_key in metadata) {
         if (metadata.hasOwnProperty(metadata_key)) {
           const metadata_value = metadata[metadata_key]
-          console.log(typeof metadata_key, isArrayOfStrings(metadata_value), metadata_key)
+          // console.log(typeof metadata_key, isArrayOfStrings(metadata_value), metadata_key)
           if (isArrayOfStrings(metadata_value)) {
             if (frontMatter.hasOwnProperty(metadata_key) && metadata_key === "tags") {
               const new_items = metadata_value.filter((value) => !frontMatter[metadata_key].some((val: string) => val === value))
@@ -419,6 +419,9 @@ async function processFrontmatter(app: App,
 
             } else {
               frontMatter[metadata_key] = metadata_value
+              if (metadata_value.length === 0) {
+                delete frontMatter[metadata_key]
+              }
             }
 
           } else if (typeof metadata_value === 'string' || typeof metadata_value === 'number') {
@@ -429,8 +432,5 @@ async function processFrontmatter(app: App,
       }
     }
 
-
-    // frontMatter.tags = frontMatter.tags || [];
-    // frontMatter.tags.push(tag.replace(/^#/, ""));
   });
 }

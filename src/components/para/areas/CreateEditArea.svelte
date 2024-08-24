@@ -232,7 +232,6 @@
       data.para_tag !== "" &&
       data.folder_path !== ""
     ) {
-      console.log(data);
       // TODO: make createPARAFile return a status of the form
       // success: created, project TFile
       // failed: not created, status on why it wasn't created
@@ -318,17 +317,23 @@
           clip-rule="evenodd"
         />
       </svg>
-      Create Area
+      {#if area === undefined}
+        Create Project
+      {:else}
+        Save Changes
+      {/if}
     {:else}
       <Circle3 size="40" unit="px" duration="1s" />
     {/if}
   </button>
 
-  <button
-    type="button"
-    on:click={() => createAreaForm.reset()}
-    class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-red px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-  >
-    Reset Form
-  </button>
+  {#if area === undefined}
+    <button
+      type="button"
+      on:click={() => createAreaForm.reset()}
+      class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-red px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+    >
+      Reset Form
+    </button>
+  {/if}
 </div>

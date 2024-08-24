@@ -127,18 +127,18 @@ export default class BrainOS extends Plugin {
 
 
 
+
     this.app.workspace.onLayoutReady(async () => {
-
-
-      await this.setupBrainOSViews()
 
       await this.loadStores()
 
+      this.setupBrainOSCommands()
+      this.setupBrainOSEvents()
+      await this.setupBrainOSViews()
+
       // this.plugins.getPlugin("nldates-obsidian")
       // console.log(this.app.plugins.enabledPlugin.has('para-periodic'))
-      this.setupBrainOSCommands()
       this.addSettingTab(new SettingTab(this.app, this));
-      this.setupBrainOSEvents()
 
     })
   }
@@ -155,6 +155,7 @@ export default class BrainOS extends Plugin {
     projectStore.loadEntries()
     resourceStore.loadEntries()
     archiveStore.loadEntries()
+    resourceStore.subscribe((val) => console.log(val))
   }
 
 
@@ -165,6 +166,7 @@ export default class BrainOS extends Plugin {
         if (file?.path.contains(".README.md")) {
           if (file.path.contains(this.settings.para.projects.folder)) {
             projectStore.loadEntries()
+            console.log(projectStore)
             ProjectEntryStore.set(projectStore.getEntryByTFile(file))
           } else if (file.path.contains(this.settings.para.areas.folder)) {
             areaStore.loadEntries()
@@ -175,11 +177,9 @@ export default class BrainOS extends Plugin {
           } else if (file.path.contains(this.settings.para.archives.folder)) {
             archiveStore.loadEntries()
           }
-        } else if (get(ProjectEntryStore)) {
+        } else {
           ProjectEntryStore.set(undefined)
-        } else if (get(AreaEntryStore)) {
           AreaEntryStore.set(undefined)
-        } else if (get(ResourceEntryStore)) {
           ResourceEntryStore.set(undefined)
         }
 
@@ -214,18 +214,18 @@ export default class BrainOS extends Plugin {
       });
     }
 
-    this.registerView(MEDIA_CONSUMPTION_VIEW, (leaf) => new MediaConsumptionView(leaf));
+    // this.registerView(MEDIA_CONSUMPTION_VIEW, (leaf) => new MediaConsumptionView(leaf));
+    //
+    // this.addRibbonIcon("book-marked", "BOS: Media view", () => {
+    //   this.activateMediaView();
+    // });
 
-    this.addRibbonIcon("book-marked", "BOS: Media view", () => {
-      this.activateMediaView();
-    });
 
-
-    this.registerView(INTEGRATOR_VIEW, (leaf) => new IntegratorView(leaf));
-
-    this.addRibbonIcon("shapes", "BOS: Integrator view", () => {
-      this.activateIntegratorView();
-    });
+    // this.registerView(INTEGRATOR_VIEW, (leaf) => new IntegratorView(leaf));
+    //
+    // this.addRibbonIcon("shapes", "BOS: Integrator view", () => {
+    //   this.activateIntegratorView();
+    // });
 
 
   }
@@ -373,12 +373,49 @@ export default class BrainOS extends Plugin {
     })
 
 
+    // Archiving related Commands
     this.addCommand({
       id: "brainos-archive-para-entry",
       name: "PARA > Archive PARA Entry",
       callback: () => {
         new SelectPARAToArchiveType(this.app).open()
       },
+    })
+
+
+    // Load Stores Manually
+    this.addCommand({
+      id: "brainOS-reload-projects-store",
+      name: "PARA > reload projects store (manually)",
+      callback: () => {
+        projectStore.loadEntries()
+      }
+    })
+
+
+    this.addCommand({
+      id: "brainOS-reload-areas-store",
+      name: "PARA > reload areas store (manually)",
+      callback: () => {
+        areaStore.loadEntries()
+      }
+    })
+
+    this.addCommand({
+      id: "brainOS-reload-resources-store",
+      name: "PARA > reload resources store (manually)",
+      callback: () => {
+        resourceStore.loadEntries()
+      }
+    })
+
+
+    this.addCommand({
+      id: "brainOS-reload-archives-store",
+      name: "PARA > reload archives store (manually)",
+      callback: () => {
+        archiveStore.loadEntries()
+      }
     })
 
   }

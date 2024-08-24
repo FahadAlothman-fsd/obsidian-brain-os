@@ -26,6 +26,8 @@ export type TabsType = {
   component: any;
 }[];
 
+export type tabIdType<T extends TabsType> = T[number]["id"];
+
 export type Tag = {
   value: string;
   count: number;

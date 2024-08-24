@@ -1,3 +1,5 @@
+<svelte:options immutable />
+
 <script lang="ts">
   import { Circle3 } from "svelte-loading-spinners";
   import { get, writable } from "svelte/store";
@@ -27,7 +29,7 @@
   import DateField from "../../UI/DateField.svelte";
   import type { ProjectEntryType } from "../../../types/paraTypes";
   import { CalendarDate } from "@internationalized/date";
-  import { TFile } from "obsidian";
+  import { TFile, Notice } from "obsidian";
   import { onDestroy } from "svelte";
 
   export let project: ProjectEntryType | undefined;
@@ -300,6 +302,8 @@
               formData["project_tag"].lastIndexOf("/"),
             ),
         );
+    } else if (project && project.related_areas.length > 0) {
+      data.related_areas = [];
     }
 
     if (
@@ -307,13 +311,14 @@
       formData["project_related_templates"].length > 0
     ) {
       data.related_templates = formData["project_related_templates"];
+    } else if (project && project.related_templates.length > 0) {
+      data.related_templates = [];
     }
 
     if (formData["project_deadline"]) {
       data.deadline = formData["project_deadline"];
     }
 
-    console.log(parseInt(formData["project_priority"]));
     if (formData["project_priority"]) {
       const priority = parseInt(formData["project_priority"]);
 
@@ -332,6 +337,12 @@
     );
     if (status) {
       data.status = status.id;
+    } else {
+      if (project === undefined) {
+        new Notice("please create a default status of type NEW");
+        isLoading.set(false);
+        return;
+      }
     }
 
     if (
@@ -339,7 +350,6 @@
       data.para_tag !== "" &&
       data.folder_path !== ""
     ) {
-      console.log(data);
       // TODO: make createPARAFile return a status of the form
       // success: created, project TFile
       // failed: not created, status on why it wasn't created
@@ -349,12 +359,17 @@
         brainOS.settings,
         PROJECT,
       );
-      createProjectForm.reset();
 
       if (file instanceof TFile) {
         ProjectEntryStore.set(undefined);
         brainOS.app.workspace.getLeaf().openFile(file);
       }
+
+      if (project === undefined) {
+        createProjectForm.reset();
+      }
+
+      projectStore.loadEntries();
     } else {
       // TODO: display error indicating that information added is not correct
     }
@@ -431,7 +446,7 @@
   <Input title={"Priority"} placeholder={"1"} inputField={projectPriority} />
   <button
     type="button"
-    disabled={!$createProjectForm.valid}
+    disabled={!$createProjectForm.valid || !$createProjectForm.dirty}
     on:click={handleCreateProject}
     class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-indigo-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
   >
@@ -448,17 +463,23 @@
           clip-rule="evenodd"
         />
       </svg>
-      Create Project
+      {#if project === undefined}
+        Create Project
+      {:else}
+        Save Changes
+      {/if}
     {:else}
       <Circle3 size="40" unit="px" duration="1s" />
     {/if}
   </button>
 
-  <button
-    type="button"
-    on:click={() => createProjectForm.reset()}
-    class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-red px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-  >
-    Reset Form
-  </button>
+  {#if project === undefined}
+    <button
+      type="button"
+      on:click={() => createProjectForm.reset()}
+      class="clickable-icon inline-flex items-center gap-x-2 rounded-md bg-red px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+    >
+      Reset Form
+    </button>
+  {/if}
 </div>

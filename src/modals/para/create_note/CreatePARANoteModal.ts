@@ -22,19 +22,21 @@ type PARAEntries = ProjectEntryType[] | AreaEntryType[] | ResourceEntryType[]
 // - create or select an exisiting folder to put the file in (for now add a toggle for either dropdown or input)
 // when all the inputs are valid use the createFile func to create the file
 export class createPARAEntryNoteModal extends Modal {
-  result: { name: string; folder: string };
-  onSubmit: (result: { name: string; folder: string }) => Promise<void>;
+  result: { name: string; folder: string, status?: string };
+  onSubmit: (result: { name: string; folder: string, status?: string }) => Promise<void>;
   new_folder: boolean
   para_entry: PARAEntry
   folders: TFolder[]
+  para_type: PARType
 
-  constructor(app: App, onSubmit: (result: { name: string; folder: string }) => Promise<void>, para_entry: PARAEntry) {
+  constructor(app: App, onSubmit: (result: { name: string; folder: string, status?: string }) => Promise<void>, para_entry: PARAEntry, para_type: PARType) {
     super(app);
     this.onSubmit = onSubmit;
     this.result = { name: "", folder: "" }
     this.new_folder = false
     this.para_entry = para_entry
     this.folders = []
+    this.para_type = para_type
 
     if (this.para_entry.folder_name) {
 
@@ -50,8 +52,20 @@ export class createPARAEntryNoteModal extends Modal {
 
 
             if (vertex.children.length > 0) {
-              const PARAEntryFolders = vertex.children.sort().filter((file) => file instanceof TFolder);
-              if (PARAEntryFolders) {
+              const PARAEntryFolders = vertex.children.sort().filter((file) => {
+
+                if (file instanceof TFolder) {
+
+                  if (this.para_type === AREA) {
+                    const files = file.children.filter((f) => f instanceof TFile && f.path.match(/(.*\.)README\.md/))
+                    if (files.length === 0) {
+                      return file
+                    }
+                  }
+                }
+              }).filter((f) => f instanceof TFolder);
+              if (PARAEntryFolders.length > 0) {
+
                 result.push(...PARAEntryFolders)
               }
 
@@ -136,6 +150,38 @@ export class createPARAEntryNoteModal extends Modal {
               this.result.folder = value
             }));
     }
+
+
+    // TODO: move the logic here to a usage for editing para notes for use later
+    //
+    // if (this.para_type === RESOURCE) {
+    //
+    //   new Setting(contentEl)
+    //     .setName("Status")
+    //     .setDesc(`choose a status from the ${this.para_type.toLowerCase()} statuses`)
+    //     .addDropdown((dropdown) => {
+    //       const brainOS = get(plugin)
+    //       if (brainOS) {
+    //
+    //         brainOS.settings.para.resources.resource_statuses.forEach((choice) => {
+    //           dropdown.addOption(choice.id, choice.name)
+    //         })
+    //
+    //         let default_status = brainOS.settings.para.resources.resource_statuses.find((val) => val.default)
+    //         if (default_status === undefined) {
+    //           new Notice("please add a default status of type NEW for resources")
+    //           this.result.status = ""
+    //         } else {
+    //           this.result.status = default_status.id
+    //         }
+    //         dropdown.setValue(this.result.status).onChange((v) => {
+    //           this.result.status = v;
+    //         });
+    //
+    //       }
+    //     });
+    // }
+
     new Setting(contentEl)
       .addButton((btn) =>
         btn
@@ -147,6 +193,25 @@ export class createPARAEntryNoteModal extends Modal {
               const errors = []
               if (this.result.name.length === 0) {
                 errors.push("please enter a name for the file")
+              }
+
+              if (this.para_type === RESOURCE) {
+                const brainOS = get(plugin)
+                if (brainOS) {
+
+                  let default_status = brainOS.settings.para.resources.resource_statuses.find((val) => val.default)
+                  if (default_status === undefined) {
+                    errors.push("please add a default status of type NEW for resources")
+                    this.result.status = ""
+                  } else {
+                    this.result.status = default_status.id
+                  }
+                }
+
+              }
+              if (this.para_type === RESOURCE && (this.result.status === undefined || this.result.status === "")) {
+
+                errors.push("please select a status for the resource")
               }
 
               if (errors.length > 0) {
@@ -179,14 +244,8 @@ export class createPARAEntryNoteModal extends Modal {
               return;
             } else {
 
-              console.log(this.new_folder,
-                this.result.folder.length > 0,
-                this.para_entry.folder_name,
-                this.new_folder && this.result.folder.length > 0 && this.para_entry.folder_name)
               if (this.new_folder && this.result.folder.length > 0 && this.para_entry.folder_name) {
-                console.log(this.result.folder)
                 this.result.folder = `${this.para_entry.folder_name.path}/${this.result.folder}`
-                console.log(this.result.folder)
               }
               this.close();
               await this.onSubmit(this.result);
@@ -204,12 +263,14 @@ export class createPARAEntryNoteModal extends Modal {
 export class selectPARAEntryTemplateModal extends FuzzySuggestModal<TFile> {
   para_entry: PARAEntry
   entries: TFile[]
+  para_type: PARType
 
 
-  constructor(app: App, para_entry: PARAEntry) {
+  constructor(app: App, para_entry: PARAEntry, para_type: PARType) {
     super(app)
     this.para_entry = para_entry
     this.entries = this.para_entry.related_templates
+    this.para_type = para_type
   }
 
   getItems(): TFile[] {
@@ -251,7 +312,15 @@ export class selectPARAEntryTemplateModal extends FuzzySuggestModal<TFile> {
   async onChooseItem(template: TFile, evt: MouseEvent | KeyboardEvent) {
     new Notice(`Selected ${template.name}`);
     new Notice(`template path: ${template.path}`)
-    let data: { locale: string, templateFile: string, folder: string, file: string } = {
+    let data: {
+      locale: string,
+      templateFile: string,
+      folder: string,
+      file: string;
+      metadata?: {
+        tags: string[];
+      } & Record<string, string | number | string[]>
+    } = {
       locale: window.moment().locale(),
       templateFile: template.path,
       folder: "",
@@ -267,7 +336,21 @@ export class selectPARAEntryTemplateModal extends FuzzySuggestModal<TFile> {
         data.folder = result.folder
 
       }
-      data.file = `${data.folder}/${result.name}.md`
+      let file_name = `${result.name}.md`
+
+      if (this.para_type === RESOURCE) {
+        file_name = `${result.name}.README.md`
+      }
+      data.file = `${data.folder}/${file_name}`
+
+      if (result.status) {
+        const brainOS = get(plugin)
+        if (brainOS) {
+
+          data.metadata = { tags: [this.para_entry.tag] }
+          data.metadata[brainOS.settings.para.resources.status_frontmatter] = result.status
+        }
+      }
 
       const file = await createFile(this.app, {
         ...data,
@@ -276,7 +359,7 @@ export class selectPARAEntryTemplateModal extends FuzzySuggestModal<TFile> {
 
         await this.app.workspace.getLeaf().openFile(file);
       }
-    }, this.para_entry).open()
+    }, this.para_entry, this.para_type).open()
 
 
   }
@@ -311,7 +394,7 @@ export class selectPARAEntryModal extends FuzzySuggestModal<PARAEntry> {
 
   onChooseItem(PAR: PARAEntry, evt: MouseEvent | KeyboardEvent) {
     new Notice(`Selected the ${PAR.README.name.split(".")[0]} ${this.para_type}`);
-    new selectPARAEntryTemplateModal(this.app, PAR).open()
+    new selectPARAEntryTemplateModal(this.app, PAR, this.para_type).open()
   }
 }
 

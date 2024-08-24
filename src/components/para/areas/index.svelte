@@ -1,6 +1,6 @@
 <script lang="ts">
   import Accordian from "../../UI/Accordian.svelte";
-  import CreateArea from "./CreateEditArea.svelte";
+  import CreateEditArea from "./CreateEditArea.svelte";
   import ListAreas from "./ListAreas.svelte";
   import { AreaEntryStore, areaStore } from "../../../stores";
 
@@ -8,7 +8,7 @@
     {
       id: "create-area",
       title: "Create Area",
-      component: CreateArea,
+      component: CreateEditArea,
       props: {},
     },
     // TODO: add an edit area that uses the same component as create but fills in the info
@@ -27,14 +27,12 @@
       {
         id: "edit-area",
         title: `Edit ${$AreaEntryStore.README.basename.split(".")[0]}`,
-        component: CreateArea,
+        component: CreateEditArea,
         props: { area: $AreaEntryStore },
       },
     ];
-    console.log("area to edit");
   } else {
     sections = sections.filter((val) => val.id !== "edit-area");
-    console.log("in clearing edit area");
   }
 
   let stats = {

@@ -98,7 +98,7 @@
         <i class="i-heroicons-chevron-left-solid text-4 md:text-6 text-black" />
       </button>
       <div use:melt={$heading} class="font-semibold text-magnum-800">
-        {year}-{year + 9}
+        {year - 1}-{year + 10}
       </div>
       <button
         on:click={(e) => {

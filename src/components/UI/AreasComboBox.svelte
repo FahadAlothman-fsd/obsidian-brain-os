@@ -54,7 +54,6 @@
     // console.log(area_tag);
     if (area_tag) {
       defaultSelected = toOption(area_tag);
-      console.log(is_disabled);
       inputValue.set($inputField.value);
       // console.log(defaultSelected);
     }

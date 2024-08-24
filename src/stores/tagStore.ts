@@ -119,7 +119,6 @@ export const tags = (() => {
   const { subscribe, set } = writable<tagType[]>([])
   let _app: App | undefined
   let _settings: BrainSettings | undefined
-  const PARATags = writable<TagType[]>([])
   plugin.subscribe(($plugin) => {
     if ($plugin) {
       _app = $plugin.app
@@ -181,114 +180,6 @@ export const tags = (() => {
   // }
 
 
-  function loadProjectTags(): TagType[] {
-    if (_app && _settings) {
-      console.log("in project tags")
-
-      const projectTags = getPARATagsByFolder(_app, _settings.para.projects.folder)
-
-      if (projectTags && projectTags.length > 0) {
-
-        return projectTags.map((tag) => {
-          return {
-            name: tag,
-            type: PROJECT,
-          }
-        })
-      }
-      return []
-    }
-
-    return []
-
-  }
-
-  function loadAreaTags(): TagType[] {
-
-    if (_app && _settings) {
-
-      const areaTags = getPARATagsByFolder(_app, _settings.para.areas.folder)
-
-      if (areaTags && areaTags.length > 0) {
-
-        return areaTags.map((tag) => {
-          return {
-            name: tag,
-            type: AREA,
-          }
-        })
-      }
-      return []
-    }
-
-    return []
-  }
-
-  function loadResourceTags(): TagType[] {
-
-    if (_app && _settings) {
-
-      const resourceTags = getPARATagsByFolder(_app, _settings.para.resources.folder)
-
-      if (resourceTags && resourceTags.length > 0) {
-
-        return resourceTags.map((tag) => {
-          return {
-            name: tag,
-            type: RESOURCE,
-          }
-        })
-      }
-      return []
-    }
-
-    return []
-  }
-
-  function loadArchiveTags(): TagType[] {
-
-    if (_app && _settings) {
-
-      const archivedTags = getPARATagsByFolder(_app, _settings.para.archives.folder)
-
-      if (archivedTags && archivedTags.length > 0) {
-
-        return archivedTags.map((tag) => {
-          return {
-            name: tag,
-            type: ARCHIVE,
-          }
-        })
-      }
-      return []
-    }
-
-    return []
-  }
-
-  function loadPARATags() {
-
-    const pTags: TagType[] = []
-    const prjTag = loadProjectTags()
-    const areaTag = loadAreaTags()
-    const resTag = loadResourceTags()
-    const archTag = loadArchiveTags()
-    if (prjTag.length > 0) {
-      pTags.push(...prjTag)
-    }
-
-    if (areaTag.length > 0) {
-      pTags.push(...areaTag)
-    }
-    if (resTag.length > 0) {
-      pTags.push(...resTag)
-    }
-    if (archTag.length > 0) {
-      pTags.push(...archTag)
-    }
-
-    PARATags.set(pTags)
-  }
 
   function loadTags() {
     if (_app) {
@@ -306,8 +197,6 @@ export const tags = (() => {
   return {
     subscribe,
     reload: () => loadTags(),
-    reloadPARA: () => loadPARATags(),
-    PARASubscribe: PARATags.subscribe,
   }
 })()
 

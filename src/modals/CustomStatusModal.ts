@@ -15,6 +15,7 @@ export class CustomStatusModal extends Modal {
   saved: boolean = false;
   error: boolean = false;
   title: string;
+  original: StatusConfiguration
 
   constructor(public plugin: BrainOS, statusType: StatusConfiguration, para_type: PARAStatusType, title: string) {
     super(plugin.app);
@@ -23,6 +24,7 @@ export class CustomStatusModal extends Modal {
     this.para_type = para_type;
     this.default_status = statusType.default_status
     this.title = title
+    this.original = new StatusConfiguration(this.statusName, this.type, this.default_status)
   }
 
   /**
@@ -74,6 +76,7 @@ export class CustomStatusModal extends Modal {
         const types = [
           StatusType.NEW,
           StatusType.IN_PROGRESS,
+          StatusType.POST_PROCESSING,
           StatusType.DONE,
           StatusType.CANCELLED,
           StatusType.ON_HOLD,
@@ -106,9 +109,9 @@ export class CustomStatusModal extends Modal {
       b.setTooltip('Save')
         .setIcon('checkmark')
         .onClick(async () => {
-          const errors = validator.validate(this.plugin, this.statusConfiguration(), this.para_type);
+          const errors = validator.validate(this.plugin, this.statusConfiguration(), this.para_type, this.original);
           if (errors.length > 0) {
-            const message = errors.join('\n\n') + '\n\n' + 'Fix errors before saving.';
+            errors.join('\n\n') + '\n\n' + 'Fix errors before saving.';
             // console.debug(message);
             const { containerEl } = this
 

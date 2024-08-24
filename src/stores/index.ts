@@ -176,7 +176,6 @@ const templates = (() => {
     subscribe,
     reload: () => {
 
-      console.log(_app, _settings)
       if (_app && _settings) {
         loadTemplateFiles(_app, _settings)
       }
