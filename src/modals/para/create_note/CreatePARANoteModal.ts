@@ -343,11 +343,11 @@ export class selectPARAEntryTemplateModal extends FuzzySuggestModal<TFile> {
       }
       data.file = `${data.folder}/${file_name}`
 
+      data.metadata = { tags: [this.para_entry.tag] }
       if (result.status) {
         const brainOS = get(plugin)
         if (brainOS) {
 
-          data.metadata = { tags: [this.para_entry.tag] }
           data.metadata[brainOS.settings.para.resources.status_frontmatter] = result.status
         }
       }
