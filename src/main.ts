@@ -155,7 +155,6 @@ export default class BrainOS extends Plugin {
     projectStore.loadEntries()
     resourceStore.loadEntries()
     archiveStore.loadEntries()
-    resourceStore.subscribe((val) => console.log(val))
   }
 
 
@@ -166,7 +165,6 @@ export default class BrainOS extends Plugin {
         if (file?.path.contains(".README.md")) {
           if (file.path.contains(this.settings.para.projects.folder)) {
             projectStore.loadEntries()
-            console.log(projectStore)
             ProjectEntryStore.set(projectStore.getEntryByTFile(file))
           } else if (file.path.contains(this.settings.para.areas.folder)) {
             areaStore.loadEntries()

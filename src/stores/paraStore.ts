@@ -457,7 +457,6 @@ const ResourceStore = () => {
                 }
 
                 if (resource_item instanceof TFolder) {
-                  console.log("found folder")
 
                   const entryFile = resource_item.children.find((val) => val instanceof TFile && val.path.match(/(.*\.)README\.md/)) as TFile
                   let resourceItem: ResourceEntryItemType | undefined
@@ -522,9 +521,7 @@ const ResourceStore = () => {
                         }
 
                       }
-                      console.log("adding to resources", resourceItem)
                       resourceEntry.resources?.push(resourceItem)
-                      console.log(resourceEntry.resources)
                     }
 
                   }
@@ -568,7 +565,6 @@ const ResourceStore = () => {
               }
             }
 
-            console.log(resourceEntry)
             return resourceEntry
           }
         }).filter((val => !!val))
