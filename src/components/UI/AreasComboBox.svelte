@@ -134,6 +134,7 @@
     onOpenChange: handleOpen,
     defaultSelected,
     disabled: is_disabled,
+    portal: null,
   });
 
   // $: console.log($selected, $input.disabled, $inputField.value);

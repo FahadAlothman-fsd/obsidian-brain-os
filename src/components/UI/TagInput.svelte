@@ -163,6 +163,7 @@
     helpers: { isSelected },
   } = createCombobox<TagComboInputType>({
     forceVisible: true,
+    portal: null,
   });
 
   $: if (!$open) {

@@ -47,6 +47,7 @@
     helpers: { isSelected },
   } = createCombobox<statusType>({
     defaultSelected,
+    portal: null,
   });
 
   $: filteredTags =
