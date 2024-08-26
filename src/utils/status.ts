@@ -393,6 +393,7 @@ export class StatusValidator {
     errors.push(...this.validateName(statusConfiguration));
     errors.push(...this.validateType(statusConfiguration.type))
     errors.push(...this.validateDefault(plugin, statusConfiguration, type, original))
+    errors.push(...this.validateUnique(plugin, statusConfiguration, type, original))
 
     return errors;
   }
@@ -443,6 +444,23 @@ export class StatusValidator {
       errors.push(`Status Type "${symbolName}" is not a valid type`);
     }
     return errors;
+  }
+
+  public validateUnique(plugin: BrainOS, statusConfiguration: StatusConfiguration, type: typeof PROJECT | typeof RESOURCE, original: StatusConfiguration) {
+    const errors: string[] = [];
+    let statuses: statusType[] = []
+    if (type === PROJECT) {
+      statuses = plugin.settings.para.projects.project_statuses
+    } else if (type === RESOURCE) {
+      statuses = plugin.settings.para.resources.resource_statuses
+
+    }
+    const exisitingDefault = statuses.find((val) => val.id === statusConfiguration.id && val.id !== original.id)
+    if (exisitingDefault) {
+      errors.push(`status cannot be of name: ${statusConfiguration.name} and of type: ${statusConfiguration.type}, as it already exists`)
+
+    }
+    return errors
   }
 
   public validateDefault(plugin: BrainOS, statusConfiguration: StatusConfiguration, type: typeof PROJECT | typeof RESOURCE, original: StatusConfiguration) {
