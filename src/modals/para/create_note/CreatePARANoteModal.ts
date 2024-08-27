@@ -22,17 +22,17 @@ type PARAEntries = ProjectEntryType[] | AreaEntryType[] | ResourceEntryType[]
 // - create or select an exisiting folder to put the file in (for now add a toggle for either dropdown or input)
 // when all the inputs are valid use the createFile func to create the file
 export class createPARAEntryNoteModal extends Modal {
-  result: { name: string; folder: string, status?: string };
-  onSubmit: (result: { name: string; folder: string, status?: string }) => Promise<void>;
+  result: { name: string; folder: string, status?: string; new_folder: boolean };
+  onSubmit: (result: { name: string; folder: string, status?: string; new_folder: boolean }) => Promise<void>;
   new_folder: boolean
   para_entry: PARAEntry
   folders: TFolder[]
   para_type: PARType
 
-  constructor(app: App, onSubmit: (result: { name: string; folder: string, status?: string }) => Promise<void>, para_entry: PARAEntry, para_type: PARType) {
+  constructor(app: App, onSubmit: (result: { name: string; folder: string, status?: string, new_folder: boolean }) => Promise<void>, para_entry: PARAEntry, para_type: PARType) {
     super(app);
     this.onSubmit = onSubmit;
-    this.result = { name: "", folder: "" }
+    this.result = { name: "", folder: "", new_folder: false }
     this.new_folder = false
     this.para_entry = para_entry
     this.folders = []
@@ -56,9 +56,18 @@ export class createPARAEntryNoteModal extends Modal {
 
                 if (file instanceof TFolder) {
 
+                  if (this.para_type === PROJECT) {
+                    return file
+                  }
                   if (this.para_type === AREA) {
                     const files = file.children.filter((f) => f instanceof TFile && f.path.match(/(.*\.)README\.md/))
                     if (files.length === 0) {
+                      return file
+                    }
+                  }
+                  if (this.para_type === RESOURCE) {
+                    const files = file.children.filter((f) => f instanceof TFile && f.path.match(/(.*\.)README\.md/))
+                    if (files.length !== 0) {
                       return file
                     }
                   }
@@ -247,6 +256,7 @@ export class createPARAEntryNoteModal extends Modal {
               if (this.new_folder && this.result.folder.length > 0 && this.para_entry.folder_name) {
                 this.result.folder = `${this.para_entry.folder_name.path}/${this.result.folder}`
               }
+              this.result.new_folder = this.new_folder
               this.close();
               await this.onSubmit(this.result);
             }
@@ -338,7 +348,8 @@ export class selectPARAEntryTemplateModal extends FuzzySuggestModal<TFile> {
       }
       let file_name = `${result.name}.md`
 
-      if (this.para_type === RESOURCE) {
+      if (this.para_type === RESOURCE && result.folder.length !== 0 && result.new_folder) {
+
         file_name = `${result.name}.README.md`
       }
       data.file = `${data.folder}/${file_name}`
