@@ -790,8 +790,6 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
               if (file.frontmatter) {
 
                 if (file.frontmatter.hasOwnProperty('tags') && isArrayOfStrings(file.frontmatter['tags'])) {
-                  // TODO: double check if the para tag is the last tag inserted or the first (i think its the last)
-                  // you could check also if the name matches either the README or the parent folder for any clues 
                   const tag = file.frontmatter['tags'].find((tag) => tag.startsWith(settings.para.areas.prefix))
 
                   if (tag) {
@@ -802,7 +800,7 @@ const ArchiveStore = (areaStore: ReturnType<typeof AreaStore>) => {
                 if (file.frontmatter.hasOwnProperty(settings.para.projects.status_frontmatter)) {
 
                   const file_status: string = file.frontmatter[settings.para.projects.status_frontmatter]
-                  const stat: statusType | undefined = settings.para.projects.project_statuses.find((status) => status.name === file_status)
+                  const stat: statusType | undefined = settings.para.projects.project_statuses.find((status) => status.id === file_status)
                   if (stat) {
 
                     projectEntry.project_status = stat

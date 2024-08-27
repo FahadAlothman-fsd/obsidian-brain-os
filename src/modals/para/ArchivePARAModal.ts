@@ -116,7 +116,7 @@ export class ArchivePARAEntryNoteModal extends Modal {
         .setDesc(description)
         .addDropdown((dropdown) => {
           this.archive_statuses.forEach((choice) => {
-            dropdown.addOption(choice.name, choice.name)
+            dropdown.addOption(choice.id, choice.name)
           })
 
           dropdown.setValue(this.result.status).onChange((v) => {

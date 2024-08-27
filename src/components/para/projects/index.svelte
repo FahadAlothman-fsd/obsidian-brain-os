@@ -2,7 +2,11 @@
   import Accordian from "../../UI/Accordian.svelte";
   import CreateEditProject from "./CreateEditProject.svelte";
   import ListProjects from "./ListProjects.svelte";
-  import { ProjectEntryStore, projectStore } from "../../../stores";
+  import {
+    archiveStore,
+    ProjectEntryStore,
+    projectStore,
+  } from "../../../stores";
   import { StatusType } from "../../../utils";
   // import PieChart from "../../charts/PieChart.svelte";
 
@@ -51,7 +55,7 @@
     },
   };
 
-  $: if ($projectStore) {
+  $: if ($projectStore || $archiveStore) {
     stats = {
       archived: {
         cancelled: 0,
@@ -77,7 +81,11 @@
         case StatusType.POST_PROCESSING:
           stats.active.post_processing += 1;
           break;
+      }
+    });
 
+    $archiveStore.archived_projects.forEach((project) => {
+      switch (project.project_status.type) {
         // Archive
         case StatusType.DONE:
           stats.archived.done += 1;
