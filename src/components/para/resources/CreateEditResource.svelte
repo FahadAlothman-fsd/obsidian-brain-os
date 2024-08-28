@@ -259,7 +259,7 @@
         />
       </svg>
       {#if resource === undefined}
-        Create Project
+        Create Resource
       {:else}
         Save Changes
       {/if}

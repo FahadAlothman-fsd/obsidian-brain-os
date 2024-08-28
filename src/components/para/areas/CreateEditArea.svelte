@@ -318,7 +318,7 @@
         />
       </svg>
       {#if area === undefined}
-        Create Project
+        Create Area
       {:else}
         Save Changes
       {/if}
