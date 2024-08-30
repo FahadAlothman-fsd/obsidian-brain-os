@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createCalendar, melt } from "@melt-ui/svelte";
-  import { get } from "svelte/store";
+  import { get, writable } from "svelte/store";
   import { createPeriodicFile, getISOWeekNumber } from "../../utils/periodic";
   import { plugin } from "../../stores";
   import { DAILY, ERROR_MESSAGE, WEEKLY } from "../../constants";
@@ -9,9 +9,13 @@
     today,
     startOfWeek,
     type DateValue,
+    CalendarDate,
   } from "@internationalized/date";
   import { moment, Notice, TFile } from "obsidian";
   import { I18N_MAP } from "../../i18n";
+  import { onMount } from "svelte";
+
+  const date = writable<CalendarDate>(today(getLocalTimeZone()));
 
   const {
     elements: { calendar, heading, grid, cell, prevButton, nextButton },
@@ -19,7 +23,7 @@
     helpers: { isDateDisabled, isDateUnavailable },
   } = createCalendar({
     locale: window.moment().locale(),
-    defaultValue: today(getLocalTimeZone()),
+    value: date,
   });
 
   const handleCreateDaily = async (day: DateValue) => {
@@ -61,6 +65,16 @@
       }
     }
   };
+
+  onMount(() => {
+    const interval = setInterval(() => {
+      date.set(today(getLocalTimeZone()));
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  });
 </script>
 
 <section>
